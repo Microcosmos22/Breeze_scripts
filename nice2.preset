@@ -1,0 +1,215 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!181963792 &2655988077585873504
+Preset:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: nice2
+  m_TargetType:
+    m_NativeTypeID: 114
+    m_ManagedTypePPtr: {fileID: 11500000, guid: fee76f5c3ca2d994abac24ddcc0ef49c, type: 3}
+    m_ManagedTypeFallback: 
+  m_Properties:
+  - target: {fileID: 0}
+    propertyPath: m_Enabled
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: m_EditorHideFlags
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: m_EditorClassIdentifier
+    value: 
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: CloudsMask.m_Bits
+    value: 8
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightMask.m_Bits
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: WorldBlockingMask.m_Bits
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: ResolutionDivider
+    value: 4
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: WorldDepthResolutionDivider
+    value: 2
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: DepthPrecision
+    value: 5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LateCut
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: BlurRadius
+    value: 10.4
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: BlurQuality
+    value: 10
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LateCutThreshohld
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LateCutPower
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: UseDepthFiltering
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: DepthFilteringPower
+    value: 0.1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: UseNoise
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Noise
+    value: 
+    objectReference: {fileID: 2800000, guid: ea4ad7e4f21a143478fefc813c9174ab, type: 3}
+  - target: {fileID: 0}
+    propertyPath: Wind.x
+    value: 2
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Wind.y
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Wind.z
+    value: 3
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: NoiseScale
+    value: 5.14
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: DepthNoiseScale
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: NormalNoisePower
+    value: 4.71
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: DepthNoisePower
+    value: 0.01
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: DisplacementNoisePower
+    value: 1.03
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: NoiseSinTimeScale
+    value: 0.185
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: DistanceToClouds
+    value: 10
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Light
+    value: 
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: UseRamp
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Ramp
+    value: 
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.r
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.g
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.b
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: ShadowColor.r
+    value: 0.512994
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: ShadowColor.g
+    value: 0.6735989
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: ShadowColor.b
+    value: 0.8301887
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: ShadowColor.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightEnd
+    value: 0.44
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: HaloPower
+    value: 2.1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: HaloDistance
+    value: 0.63
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: FallbackDistance
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: blurFastShader
+    value: 
+    objectReference: {fileID: 4800000, guid: 7ab901123de490e4bad21fdb835edd20, type: 3}
+  - target: {fileID: 0}
+    propertyPath: blurShader
+    value: 
+    objectReference: {fileID: 4800000, guid: fd4453f270eb2734b886efe5223588ce, type: 3}
+  - target: {fileID: 0}
+    propertyPath: blurHQShader
+    value: 
+    objectReference: {fileID: 4800000, guid: 22d75b161fbf2d14b9cd656fde6d05bd, type: 3}
+  - target: {fileID: 0}
+    propertyPath: depthBlurShader
+    value: 
+    objectReference: {fileID: 4800000, guid: 86ffe5743a2c74741be2ae7d00c19d9b, type: 3}
+  - target: {fileID: 0}
+    propertyPath: depthShader
+    value: 
+    objectReference: {fileID: 4800000, guid: 009f6c8cf8d3c144792d6321909e830c, type: 3}
+  - target: {fileID: 0}
+    propertyPath: cloudShader
+    value: 
+    objectReference: {fileID: 4800000, guid: ddd68a53b8f487941ac09b4480974963, type: 3}
+  - target: {fileID: 0}
+    propertyPath: clearColorShader
+    value: 
+    objectReference: {fileID: 4800000, guid: e8f3ce2cbe4971147b1b7f04b791e52a, type: 3}
+  m_ExcludedProperties: []
