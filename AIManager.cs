@@ -48,7 +48,7 @@ public class AIManager : MonoBehaviour
 
     void Start(){
 
-        NAIs = 0;
+        NAIs = 5;
         for (int i = 0; i < NAIs; i++) {
             dummyAircraft.Add(null); // Fills the list with nulls
             dummyPlaneControl.Add(null);

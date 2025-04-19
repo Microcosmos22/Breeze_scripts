@@ -117,7 +117,7 @@ public class ChatManager : NetworkBehaviour
     [Command(requiresAuthority = false)]
     public void CmdSendMessage(string message, string username)
     {
-      RpcAddMessage($">{username}: {message}");
+      RpcAddMessage($"{username}: {message}");
     }
 
     [ClientRpc]

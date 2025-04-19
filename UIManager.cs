@@ -38,14 +38,23 @@ public class UIManager : NetworkManager
     public GameObject bullet_trail_prefab;
     public GameObject MountainRace;
 
-
-    void Awake(){
-        if (Instance == null){
+    void Awake()
+    {
+        if (Instance == null)
+        {
             Instance = this;
         }
-        else{
+        else
+        {
             Destroy(gameObject);
             return;
+        }
+
+        // Disable Mirror's built-in NetworkManager
+        if (NetworkManager.singleton != null)
+        {
+            Destroy(NetworkManager.singleton.gameObject); // This will destroy Mirror's NetworkManager
+            Debug.Log("Destroyed Mirror's NetworkManager to use custom UIManager");
         }
     }
 
@@ -141,7 +150,10 @@ public class UIManager : NetworkManager
     }
 
 
-    void Start(){
+    public override void Start(){
+
+
+
         //aiManager = FindAIManagerInAnyScene();
         StartCoroutine(LoadSceneAndSetActive());
 
@@ -151,6 +163,7 @@ public class UIManager : NetworkManager
         //NetworkManager.singleton.StartHost();=?˛÷—  QASDF3GV BHNJM,.-PO 1Q
 
         terrain = GameObject.FindWithTag("Terrain");
+        base.Start();
 
         PrintNetworkedObjects();
         if (Input.GetKeyDown(KeyCode.F11)) {
@@ -229,13 +242,7 @@ public class UIManager : NetworkManager
 
     }
 
-    void OnStartServer(){
-      Debug.Log(" 🚨 Server Started");
-      Debug.Log($"Server active: {NetworkServer.active}");
-
-    }
-
-    void Update(){
+    public   void Update(){
 
         //PrintNetworkedObjects();
 
@@ -270,7 +277,7 @@ public class UIManager : NetworkManager
 
     }
 
-    public override void OnServerDisconnect(NetworkConnectionToClient conn){
+    public   void OnServerDisconnect(NetworkConnectionToClient conn){
         if(conn != null && conn.identity != null){
         if (aircrafts.ContainsKey(conn.identity)){
             GameObject aircraft = aircrafts[conn.identity];

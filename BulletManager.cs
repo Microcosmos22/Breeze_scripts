@@ -60,7 +60,7 @@ public class BulletManager : NetworkBehaviour
     {
          if(pc.networkIdentity.isOwned){ // is pc.enabled
 
-          if (Input.GetKeyDown(KeyCode.Tab)){
+          if (Input.GetKeyDown(KeyCode.Return)){
               chatInputField.Select();
               chatInputField.ActivateInputField();
           }

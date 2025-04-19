@@ -148,9 +148,8 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
                   newTotalVel = airspeed + slope_vel + cloud_suction + glide_vec + tornado;
               }
 
-              if(Input.GetKey(KeyCode.T)){
-                  newTotalVel = newTotalVel + elevvec;
-              }
+
+              UpdateParticleTrajectories();
 
             }else if(isAI){ // For AI
 

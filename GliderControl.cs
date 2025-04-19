@@ -55,7 +55,8 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
 
 
     // Start is called before the first frame update
-    void Start(){
+    public void Start(){
+
         bulletManager = GetComponent<BulletManager>();
         netIdentity = GetComponent<NetworkIdentity>();
         StartCoroutine(WaitForTerrainInNetwork());
@@ -85,7 +86,8 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
         print(rb.linearVelocity);
     }
 
-    void FixedUpdate(){
+    public void FixedUpdate(){
+
         if (isLocalPlayer){
           healingTimer += Time.deltaTime;
           if (healthBar < 100f && healingTimer > healingTime){
