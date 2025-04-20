@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class BulletManager : NetworkBehaviour
 {
-
+    private bool chatSelected = false;
     public GameObject player;
     public float directHitDamage = 33f;
     private Vector3 gun_xyz;
@@ -60,10 +60,17 @@ public class BulletManager : NetworkBehaviour
     {
          if(pc.networkIdentity.isOwned){ // is pc.enabled
 
-          if (Input.GetKeyDown(KeyCode.Return)){
-              chatInputField.Select();
-              chatInputField.ActivateInputField();
-          }
+           if (Input.GetKeyDown(KeyCode.Return) && !chatSelected) {
+               chatInputField.Select();
+               chatInputField.ActivateInputField();
+               chatSelected = true; // flag so we know it's active
+           } else if (Input.GetKeyDown(KeyCode.Return) && chatSelected) {
+               
+               chatInputField.DeactivateInputField(); // stops capturing input
+               chatSelected = false; // reset the flag
+           }
+
+
           if (Input.GetKeyDown(KeyCode.Return) && !string.IsNullOrWhiteSpace(chatInputField.text)){
               string msg = chatInputField.text;
               chatInputField.text = "";

@@ -34,7 +34,8 @@ public class UIManager : NetworkManager
 
     public bool[] saveState = new bool[12];
     private string loadedSceneName = ""; // Track the last loaded scene name
-    public GameObject cloudFinder, terrain;
+    public GameObject cloudFinder;
+    public Terrain terrain;
     public GameObject bullet_trail_prefab;
     public GameObject MountainRace;
 
@@ -158,11 +159,13 @@ public class UIManager : NetworkManager
         StartCoroutine(LoadSceneAndSetActive());
 
         StartCoroutine(DelayedHostStart());
+
+        StartCoroutine(FindTerrainInScenes());
         //NetworkManager.singleton.sendRate = 30;
         //NetworkManager.singleton.StartServer();
         //NetworkManager.singleton.StartHost();=?˛÷—  QASDF3GV BHNJM,.-PO 1Q
 
-        terrain = GameObject.FindWithTag("Terrain");
+        //terrain = GameObject.FindWithTag("Terrain");
         base.Start();
 
         PrintNetworkedObjects();
@@ -181,6 +184,28 @@ public class UIManager : NetworkManager
         return null;
     }
 
+
+    IEnumerator FindTerrainInScenes(){
+    while (terrain == null){
+        for (int i = 0; i < SceneManager.sceneCount; i++){
+            Scene scene = SceneManager.GetSceneAt(i);
+
+            if (scene.isLoaded){
+                GameObject[] rootObjects = scene.GetRootGameObjects();
+
+                foreach (GameObject obj in rootObjects){
+                    if (obj.CompareTag("Terrain")){
+                        terrain = obj.GetComponent<Terrain>();
+                        if (terrain != null) yield break;
+                    }
+                }
+            }
+        }
+
+        yield return new WaitForSeconds(0.1f);
+    }
+}
+
     private void WaitForServerAndTerrainThenSpawnDummy(){
         if (!NetworkServer.active){
             return;
@@ -196,7 +221,7 @@ public class UIManager : NetworkManager
         }
 
 
-        if (terrain != null && terrain.GetComponent<NetworkIdentity>() != null && aiManager != null){
+        if (terrain != null && aiManager != null){
             //print("Spawning dummy AI players...");
             aiManager.GetComponent<AIManager>().SpawnDummyPlayer();
         }else{
@@ -242,12 +267,12 @@ public class UIManager : NetworkManager
 
     }
 
-    public   void Update(){
+    public void Update(){
 
         //PrintNetworkedObjects();
 
         TimerSpawnDummies += Time.deltaTime;
-        if (TimerSpawnDummies > 20f){
+        if (TimerSpawnDummies > 1f){
             WaitForServerAndTerrainThenSpawnDummy();
             TimerSpawnDummies = 0f;}
 

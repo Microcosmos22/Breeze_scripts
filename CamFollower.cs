@@ -59,8 +59,13 @@ public class CamFollower : MonoBehaviour
             //distance = Mathf.Clamp(distance, minDistance, maxDistance); // Ensure distance is within bounds
 
             // Calculate mouse movement for rotation
-            mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-            mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+            if (Application.platform == RuntimePlatform.WebGLPlayer) {
+                mouseX = Input.GetAxis("Mouse X") * mouseSensitivity / 4 * Time.deltaTime;
+                mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity / 4 * Time.deltaTime;
+            }else{
+                mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+                mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+            }
 
             yRotation += mouseX;
             xRotation -= mouseY;

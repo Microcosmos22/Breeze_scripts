@@ -158,6 +158,7 @@ public class AIManager : MonoBehaviour
                 dummyPlaneControl[i].glide_desc = 0;
                 dummyPlaneControl[i].Username = "AI numbah " + i.ToString();
                 dummyRb[i] = dummyAircraft[i].GetComponent<Rigidbody>();
+                dummyPlaneControl[i].ispaused = false;
 
                 SetAIPosition(i);
                 print($" 🧠 Spawning {i}th AI slot, pos: {dummyAircraft[i].transform.position}");

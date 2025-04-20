@@ -131,7 +131,7 @@ public class ChatManager : NetworkBehaviour
 
 
       int count = 0;
-      print($"Writing RpcAddmessage: {message}");
+      //print($"Writing RpcAddmessage: {message}");
 
       messagePrefab = Resources.Load<GameObject>("messagePrefab");
 
