@@ -32,6 +32,7 @@ public class CamFollower : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
         player = transform.parent.gameObject;
         gunImg = gunCrosshair.GetComponentInChildren<RawImage>();
 
@@ -42,6 +43,8 @@ public class CamFollower : MonoBehaviour
             offset = transform.position - GameObject.Find("EZGliderPlanePrefab 1").GetComponent<Rigidbody>().transform.position;
         }
         distance = offset.magnitude;
+
+        Camera.main.enabled = true;
     }
 
     // Update is called once per frame

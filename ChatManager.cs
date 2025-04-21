@@ -37,6 +37,7 @@ public class ChatManager : NetworkBehaviour
       if (updatePlayersTime > updatePlayersTimer){
           updatePlayersTime = 0f;
           SetupAircrafts();
+          //RpcSendLeaderboard(Username.ToArray(), kills.ToArray(), deaths.ToArray());
       }
 
       GetKills();
@@ -45,6 +46,8 @@ public class ChatManager : NetworkBehaviour
   }
 
   void SetupAircrafts(){
+    // Update list of player ChatText, LBText etc. references regularly.
+
     chatText = new List<TextMeshProUGUI>();
     lbText = new List<TextMeshProUGUI>();
     bulletManagers = new List<BulletManager>();
@@ -83,14 +86,16 @@ public class ChatManager : NetworkBehaviour
           deaths[i] = bulletManagers[i].deaths;
       }
   }
-  void MakeLeaderboard(){
+
+  [ClientRpc]
+  void RpcSendLeaderboard(string[] usernames, int[] kills, int[] deaths){
       List<int> score = new List<int>();       // Score list (kills - deaths)
       List<string> lbStrings = new List<string>();  // Unsorted leaderboard lines
 
       // Build scores and leaderboard strings
       for (int i = 0; i < nPlayers; i++){
           score.Add(kills[i] - deaths[i]);
-          lbStrings.Add($" S: {kills[i] - deaths[i]} | K: {kills[i]} | D: {deaths[i]} | {Username[i]}");
+          lbStrings.Add($" {Username[i]} | {kills[i] - deaths[i]}");
       }
 
       // Get sorted indices
@@ -102,6 +107,7 @@ public class ChatManager : NetworkBehaviour
 
       // Create final leaderboard string in sorted order
       string fullLeaderboard = string.Join("\n", sortedI.Select(i => lbStrings[i]));
+      print(fullLeaderboard);
 
       // Update the UI
       foreach (var lb in lbText){
@@ -124,26 +130,20 @@ public class ChatManager : NetworkBehaviour
     public void RpcAddMessage(string message)
     {
       // Only continue if this player is using PlaneControl
-    if (GetComponent<GliderControl>()?.enabled == true)
-    {
+    if (GetComponent<GliderControl>()?.enabled == true){
         return; // skip if it's a glider player
     }
 
-
       int count = 0;
-      //print($"Writing RpcAddmessage: {message}");
-
       messagePrefab = Resources.Load<GameObject>("messagePrefab");
 
-      foreach (var vert in VertLayoutGroups)
-      {
-        if (messagePrefab == null) {
-          Debug.LogError("Message Prefab is not assigned!");
-        }
-        if (vert == null) {
-          Debug.LogError("Vertical Layout Group is not assigned!");
-        }
-
+      foreach (var vert in VertLayoutGroups){
+          if (messagePrefab == null) {
+            Debug.LogError("Message Prefab is not assigned!");
+          }
+          if (vert == null) {
+            Debug.LogError("Vertical Layout Group is not assigned!");
+          }
 
           GameObject newMessage = Instantiate(messagePrefab, vert.transform);
           TextMeshProUGUI messageText = newMessage.GetComponent<TextMeshProUGUI>();

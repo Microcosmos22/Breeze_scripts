@@ -304,8 +304,8 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     }
 
     public void set_initpos(){
-        transform.position = new Vector3(15f, 15f, 1015f);
-        //transform.position = new Vector3(500f, 120f, 500f);
+        //transform.position = new Vector3(15f, 15f, 1015f);
+        transform.position = new Vector3( 650f, 320f, 300f );
         rb.linearVelocity = transform.forward * 5f;
         healthBar = 100f;
     }

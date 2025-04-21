@@ -65,7 +65,7 @@ public class BulletManager : NetworkBehaviour
                chatInputField.ActivateInputField();
                chatSelected = true; // flag so we know it's active
            } else if (Input.GetKeyDown(KeyCode.Return) && chatSelected) {
-               
+
                chatInputField.DeactivateInputField(); // stops capturing input
                chatSelected = false; // reset the flag
            }
@@ -224,6 +224,7 @@ public class BulletManager : NetworkBehaviour
     public void CmdShootBullet(Quaternion gun_quaternion){
         if (Time.time - lastFireTime < fireRate) return; // Prevent shooting too fast
         if (!isServer) return;
+        
 
         lastFireTime = Time.time; // Update last fire time
          bullet = Instantiate(bullet_trail_prefab);

@@ -56,14 +56,12 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
 
     // Start is called before the first frame update
     public void Start(){
+        set_initpos();
 
         bulletManager = GetComponent<BulletManager>();
         netIdentity = GetComponent<NetworkIdentity>();
         StartCoroutine(WaitForTerrainInNetwork());
 
-        transform.position = new Vector3(500f, 100f, 500f);
-
-        // Only initialize physics on the server and local player
         if (isServer || isLocalPlayer)
         {
 
@@ -72,9 +70,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
             rb.isKinematic = false;
             rb.centerOfMass = Vector3.zero;
 
-            // Only set initial velocity on server
-            if (isServer)
-            {
+            if (isServer){
                 rb.linearVelocity = transform.forward.normalized * init_velocity;
                 rb.inertiaTensor = new Vector3(40f, 40f, 40f);
             }
@@ -183,7 +179,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
     public void set_initpos(){
 
         //transform.position = new Vector3(5f, 15f, 1015f);
-        transform.position = new Vector3(500f, 100f, 500f);
+        transform.position = new Vector3(711f, 283f, 321f);
         rb.linearVelocity = transform.forward * 5f;
         healthBar = 100f;
 
