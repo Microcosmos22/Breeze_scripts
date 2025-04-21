@@ -67,7 +67,7 @@ public class PanelManager : NetworkBehaviour
             flyButton.onClick.AddListener(OnFlyButtonClicked);
         }
 
-        //OnFlyButtonClicked();
+        OnFlyButtonClicked();
     }
 
 
