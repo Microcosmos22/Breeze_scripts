@@ -129,14 +129,19 @@ public class AIManager : MonoBehaviour
                        target_direction = paral_hangL;
                    }else{
                        target_direction = paral_hangR;}
-                   }
 
-                  if (target_direction != Vector3.zero){
-                       steer = CalculateAISteer(target_direction, dummyPlaneControl[i].transform.forward);
-                      dummyPlaneControl[i].AIsteer = steer;
-                    }else{
-                      dummyPlaneControl[i].AIsteer = 0;
-                    }
+                 }else{
+                    target_direction = Vector3.zero;
+                    
+                 }
+
+                if (target_direction != Vector3.zero){
+                     steer = CalculateAISteer(target_direction, dummyPlaneControl[i].transform.forward);
+                    dummyPlaneControl[i].AIsteer = steer;
+                  }else{
+
+                    dummyPlaneControl[i].AIsteer = 0;
+                  }
             }
         }}
 
@@ -282,7 +287,7 @@ public class AIManager : MonoBehaviour
 
         terr_height = 50f;
 
-        flightlevel.Add(UnityEngine.Random.Range(terr_height+10f, 200f));
+        flightlevel.Add(UnityEngine.Random.Range(terr_height+10f, 300f));
 
         dummyAircraft[i].transform.position = new Vector3(
             UnityEngine.Random.Range(400f, 600f), // 500 to 700

@@ -137,7 +137,7 @@ private float[,] treedensity = new float[3, 4]
                         splatmapData[z, x, 0] = 1.0f;
                     }
 
-                    //detailLayerGreen[z, x] = detailDensity;
+                    detailLayerGreen[z, x] = detailDensity;
 
 
 
@@ -182,7 +182,7 @@ private float[,] treedensity = new float[3, 4]
                     //detailLayerFlower[z, x] = 2;
 
 
-                    if ((UnityEngine.Random.value < treedensity[0,2])){
+                    if ((UnityEngine.Random.value < treedensity[0,2]*1.5f)){
                         TreeInstance treeInstance = new TreeInstance
                         {
                             position = new Vector3((float)x/terrainData.size.x, ho/ terrainData.size.y, (float)z/terrainData.size.z),

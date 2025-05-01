@@ -23,12 +23,11 @@ public class ChatManager : NetworkBehaviour
   private List<int> sortedI = new List<int>();
   private List<string> lbStrings = new List<string>();
 
-  private float updatePlayersTimer = 2f, updatePlayersTime;
+  private float updatePlayersTimer = 5f, updatePlayersTime;
   private int nPlayers;
 
   void Start(){
 
-      print("msg prefab");
       Debug.Log(messagePrefab);
   }
 
@@ -36,8 +35,9 @@ public class ChatManager : NetworkBehaviour
       updatePlayersTime += Time.deltaTime;
       if (updatePlayersTime > updatePlayersTimer){
           updatePlayersTime = 0f;
-          SetupAircrafts();
-          //RpcSendLeaderboard(Username.ToArray(), kills.ToArray(), deaths.ToArray());
+          if (isServer){
+              SetupAircrafts();
+              RpcSendLeaderboard(Username.ToArray(), kills.ToArray(), deaths.ToArray());}
       }
 
       GetKills();
@@ -57,6 +57,7 @@ public class ChatManager : NetworkBehaviour
     foreach (var netId in NetworkServer.spawned){
         var obj = netId.Value.gameObject;
         var plane = obj.GetComponent<PlaneControl>();
+        print(obj.name);
 
         if (plane != null){
             if (plane.networkIdentity.isOwned){ // found a Player PlaneControl
@@ -74,8 +75,6 @@ public class ChatManager : NetworkBehaviour
                 deaths.Add(0);
             }
       }
-
-
       }
       print($"ChatManager found {nPlayers} players");
   }
@@ -95,7 +94,7 @@ public class ChatManager : NetworkBehaviour
       // Build scores and leaderboard strings
       for (int i = 0; i < nPlayers; i++){
           score.Add(kills[i] - deaths[i]);
-          lbStrings.Add($" {Username[i]} | {kills[i] - deaths[i]}");
+          lbStrings.Add($" {kills[i]} | {deaths[i]}| {kills[i] - deaths[i]} | {Username[i]}");
       }
 
       // Get sorted indices

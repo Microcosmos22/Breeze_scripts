@@ -12,7 +12,16 @@ public class Bullet : NetworkBehaviour
     private NetworkIdentity playerIdentity;
     private PlaneControl pc;
 
+    public GameObject smallExplosion;
+    private GameObject explosionInstance;
+
     void Start(){}
+
+    [Server]
+    public IEnumerator DestroyExplosionAfterTime(GameObject explosionInstance, float time){
+        yield return new WaitForSeconds(time);
+        NetworkServer.Destroy(explosionInstance);
+    }
 
     void OnCollisionEnter(Collision collision){
         pc = collision.gameObject.GetComponent<PlaneControl>();
@@ -30,6 +39,11 @@ public class Bullet : NetworkBehaviour
             }else{
                 Debug.LogWarning("❌ No NetworkIdentity or connection found on collided player.");
             }
+        }else if( collision.gameObject.CompareTag("Terrain")){
+          explosionInstance = Instantiate(smallExplosion);
+          explosionInstance.transform.position = transform.position;
+          StartCoroutine(DestroyExplosionAfterTime(explosionInstance, 0.05f));
+          NetworkServer.Spawn(explosionInstance);
         }
       NetworkServer.Destroy(gameObject);
       }

@@ -16,16 +16,13 @@ public class PanelManager : NetworkBehaviour
     private GliderControl gc;
 
     private Camera mainCam;
-    public GameObject guidePanel, registerPanel, instrumentsPanel, gamePanel;
+    public GameObject guidePanel, registerPanel, instrumentsPanel;
 
     public GameObject inputField;   // Assign in inspector
     private TMP_InputField inputF;      // This will hold the reference to InputField
 
     void Update(){
 
-        if (gc != null && gc.enabled == true){
-            instrumentsPanel.SetActive(false);
-        }
     }
 
     void Start(){
@@ -56,9 +53,7 @@ public class PanelManager : NetworkBehaviour
             mainCam = GetComponentInChildren<Camera>();
 
             registerPanel.SetActive(true);
-            gamePanel.SetActive(false);
             instrumentsPanel.SetActive(false);
-            Debug.Log("registerPanel Enabled: " + gamePanel.activeSelf);
 
             mainCam.enabled = true;
         }
@@ -67,7 +62,7 @@ public class PanelManager : NetworkBehaviour
             flyButton.onClick.AddListener(OnFlyButtonClicked);
         }
 
-        OnFlyButtonClicked();
+        //OnFlyButtonClicked();
     }
 
 
@@ -96,10 +91,8 @@ public class PanelManager : NetworkBehaviour
         if (isLocalPlayer)
         {
             registerPanel.SetActive(false);
-            gamePanel.SetActive(true);
             guidePanel.SetActive(false);
             instrumentsPanel.SetActive(true);
-            Debug.Log("gamePanel Enabled: " + gamePanel.activeSelf);
 
             mainCam.enabled = true; // Disable the guide camera if any
             //Camera.main.enabled = true; // Enable the main camera for the scene

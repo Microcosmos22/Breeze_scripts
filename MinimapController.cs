@@ -28,8 +28,8 @@ public class MinimapController : NetworkBehaviour
     private int planeN;
 
 
-    public float mapScale = 1f; // Adjust based on your world size
-    private float getEnemiesTimer, getEnemiesTime = 2f;
+    private float mapScale = 0.7f; // Adjust based on your world size
+    private float getEnemiesTimer, getEnemiesTime = 0.2f;
     private Vector2 minimapCenter = new Vector2(0f, 0f);
     private Vector3 offset;
     private Vector2 minimapPos;
@@ -41,8 +41,7 @@ public class MinimapController : NetworkBehaviour
 
     }
 
-    [TargetRpc]
-    private void instIcons(){
+    public void instIcons(){
       foreach (Transform child in minimapPanel){
           if (child.name.Contains("EnemyDot")){
               DestroyImmediate(child.gameObject);
@@ -50,59 +49,38 @@ public class MinimapController : NetworkBehaviour
       }
       enemyIcons = new List<RectTransform>();
 
-      print($"N of planes {planeN}");
+      print($"planes.Count = {planes.Count}, planeN = {planeN}");
 
-      for (int i = 0; i < planeN; i++){
+      for (int i = 0; i < planes.Count; i++){
 
           offset = planes[i].transform.position - player.position;
+          minimapPos = new Vector2(offset.x*mapScale, offset.z*mapScale);
+          if (minimapPos.magnitude < 250f){
 
-          if (offset.magnitude < 5f){
-            continue;
-            i -= 1;}
+              dot = Instantiate(enemyDotPrefab, minimapPanel);
+              dotRect = dot.GetComponent<RectTransform>();
+              //dotRect.anchoredPosition = minimapPos; // without camera rotation
+              //   Rotate icons around center, depending on camera position
 
-
-          minimapPos = new Vector2(offset.x, offset.z) * mapScale;
-
-          dot = Instantiate(enemyDotPrefab, minimapPanel);
-          dotRect = dot.GetComponent<RectTransform>();
-          //dotRect.anchoredPosition = minimapPos; // without camera rotation
-          //   Rotate icons around center, depending on camera position
-
-
-          radius = minimapPos.magnitude;
-          angleInRadians = + beta * Mathf.Deg2Rad;
-
-          x = minimapPos.x + minimapCenter.x + radius * Mathf.Cos(angleInRadians);
-          y = minimapPos.y + minimapCenter.y + radius * Mathf.Sin(angleInRadians);
-
-          // Position rotated by camera azimuth
-          dotRect.anchoredPosition = new Vector2(x, y);
+              radius = minimapPos.magnitude;
+              beta = camera.rotation.eulerAngles.y;
+              angleInRadians = + beta * Mathf.Deg2Rad;
 
 
-          // rotation of the icons
-          gamma = planes[i].transform.rotation.eulerAngles.y;
-          beta = camera.rotation.eulerAngles.y;
-          alpha = gamma - beta;
-          dotRect.rotation = Quaternion.Euler(0, 0, -alpha);
+              x = minimapPos.x * Mathf.Cos(angleInRadians) - minimapPos.y * Mathf.Sin(angleInRadians);
+              y = minimapPos.x * Mathf.Sin(angleInRadians) + minimapPos.y * Mathf.Cos(angleInRadians);
 
-          enemyIcons.Add(dotRect);
-      }
-    }
+              // Position rotated by camera azimuth
+              dotRect.anchoredPosition = new Vector2(x, y);
 
-    void Update(){
+              // rotation of the icons
+              gamma = planes[i].transform.rotation.eulerAngles.y;
+              beta = camera.rotation.eulerAngles.y;
+              alpha = gamma - beta;
+              dotRect.rotation = Quaternion.Euler(0, 0, -alpha);
 
-        getEnemiesTimer += Time.deltaTime;
-        if (getEnemiesTimer > getEnemiesTime){
-            // How many players ? Instantiate their icons.
-            FindAllPlanesInAllScenes();
-            instIcons();
-            getEnemiesTimer = 0f;
-        }
-
-        gamma = player.rotation.eulerAngles.y;
-        beta = camera.rotation.eulerAngles.y;
-        alpha = gamma - beta;
-        playerIcon.rotation = Quaternion.Euler(0, 0, -alpha);
+              enemyIcons.Add(dotRect);
+      }}
     }
 
 
@@ -117,16 +95,33 @@ public class MinimapController : NetworkBehaviour
                  players = GameObject.FindGameObjectsWithTag("Player");
                  AIs = GameObject.FindGameObjectsWithTag("AI");
 
-                 foreach (GameObject ai in AIs){
-                    print(ai.name);
-                 }
-
                  planes.AddRange(AIs);
                  planes.AddRange(players);
+                 planes.Remove(player.gameObject);
 
                  planeN = planes.Count;
             }
         }
+    }
 
+
+    void Update(){
+      if (isServer) return;
+
+      instIcons();
+
+      getEnemiesTimer += Time.deltaTime;
+      if (getEnemiesTimer > getEnemiesTime){
+          // How many players ? Instantiate their icons.
+          FindAllPlanesInAllScenes();
+
+          getEnemiesTimer = 0f;
+      }
+
+
+        gamma = player.rotation.eulerAngles.y;
+        beta = camera.rotation.eulerAngles.y;
+        alpha = gamma - beta;
+        playerIcon.rotation = Quaternion.Euler(0, 0, -alpha);
     }
 }

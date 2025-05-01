@@ -15,8 +15,10 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     private Vector3 newTotalVel;
     private int x;
     private int z;
-    private float wy, ho, hx, hz, kappa, dv_hor, my_angular_vel, my_climb_vel, climb, v_hor, distance_tobase, trailSpeed, elapsedTime;
+    private float wy, hx, hz, kappa, dv_hor, my_angular_vel, my_climb_vel, climb, v_hor, distance_tobase, trailSpeed, elapsedTime;
     private bool exploded, breaks;
+    float ho, hxRight, hxLeft, hzForward, hzBackward, gradientX, gradientZ;
+    public Camera playerCamera;
 
     private ParticleSystem windParticles;
 
@@ -90,8 +92,12 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public List<GameObject> ownBullets = new List<GameObject>();
     public bool ispaused = true;
 
+    private AudioSource audioSource;
+    public AudioClip shootSound;
 
     void FixedUpdate(){
+
+
         if (!ispaused && land != null && ((isLocalPlayer) || (isAI))){
 
             if (isLocalPlayer){
@@ -122,7 +128,18 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
                   isCoolingDown = true;
               }else if (Input.GetMouseButton(0) && !isCoolingDown){
                   gunCoolTimer += Time.deltaTime;
-                  bulletManager.CmdShootBullet(camFollow.get_camera_quaternion());
+
+                  if (Time.time - bulletManager.lastFireTime > bulletManager.fireRate){
+                    if (isClient && audioSource != null)
+                    {
+                      audioSource.PlayOneShot(shootSound);
+                    }
+
+                      bulletManager.lastFireTime = Time.time; // Update last fire time
+                      if (isLocalPlayer && NetworkClient.isConnected && isOwned){
+                          bulletManager.CmdShootBullet(camFollow.get_camera_quaternion());
+                      }}
+
               }else if(isCoolingDown && gunCoolTimer < 0f){
                   isCoolingDown = false;
               }
@@ -159,8 +176,18 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
                   isCoolingDown = true;
                   playerDetected = false;
               }else if (playerDetected && !isCoolingDown){
+
                   gunCoolTimer += Time.deltaTime;
-                  bulletManager.AICmdShootBullet(aimAIQ);
+
+                  if (Time.time - bulletManager.lastFireTime > bulletManager.fireRate){
+                      if (audioSource != null){
+                        audioSource.PlayOneShot(shootSound);
+                      }
+
+                      bulletManager.lastFireTime = Time.time; // Update last fire time
+                      if (NetworkClient.isConnected){
+                          bulletManager.AICmdShootBullet(aimAIQ);
+                      }}
               }else if(isCoolingDown && gunCoolTimer < 0f){
                   isCoolingDown = false;
                   playerDetected = true;
@@ -189,8 +216,22 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
         aimAIQ = newAim;
     }
 
+    public override void OnStartClient()
+        {
+            base.OnStartClient();
+
+            // Check if this object is owned by the local player
+            if (!isLocalPlayer && playerCamera != null)
+            {
+                // Disable the camera or any other components for non-local players
+                playerCamera.enabled = false;
+            }
+        }
+
     void Start()
     {
+      audioSource = GetComponent<AudioSource>();
+
 
       StartCoroutine(FindTerrainInScenes());
       gunCoolTimer = UnityEngine.Random.Range(0f, 8f);
@@ -206,12 +247,8 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
 
 
         StartCoroutine(Wait4Terrain_ThenCache());
-        System.Threading.Thread.Sleep(1000);
 
         camFollow = GetComponentInChildren<CamFollower>();
-
-        rb = this.GetComponent<Rigidbody> ();
-        /* DELETE AFTERWARDS */
 
         bulletManager.explosionTime = 60f/bulletManager.bulletspeed;
         Application.targetFrameRate = -1;
@@ -257,10 +294,6 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
         yield return new WaitForSeconds(0.1f);
     }
 }
-
-
-
-
 
     public float GetCachedHeight(Vector3 position){
         if (land == null){
@@ -338,11 +371,12 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
           if (collision.gameObject.CompareTag("Terrain")){
               healthBar -= 102f; // Damage in server, then damage the client
               TargetTakeDamage(networkIdentity.connectionToClient, 102f);
+              bulletManager.deaths += 1;
           }
       }else{                        // AI
           if (collision.gameObject.CompareTag("Terrain")){
               healthBar -= 102f; // Damage in server, then damage the client
-
+              bulletManager.deaths += 1;
           }
     }}
 
@@ -380,15 +414,16 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
         Vector3 posBackward = pos - new Vector3(0.0f, 0.0f, stepSize);
 
         // Get terrain heights at each point
-        float ho = GetCachedHeight(pos);
-        float hxRight = GetCachedHeight(posRight);
-        float hxLeft = GetCachedHeight(posLeft);
-        float hzForward = GetCachedHeight(posForward);
-        float hzBackward = GetCachedHeight(posBackward);
+        ho = GetCachedHeight(pos);
+         hxRight = GetCachedHeight(posRight);
+         hxLeft = GetCachedHeight(posLeft);
+         hzForward = GetCachedHeight(posForward);
+         hzBackward = GetCachedHeight(posBackward);
+
 
         // Compute central difference for gradient
-        float gradientX = (hxRight - hxLeft) / (2 * stepSize);
-        float gradientZ = (hzForward - hzBackward) / (2 * stepSize);
+         gradientX = (hxRight - hxLeft) / (2 * stepSize);
+         gradientZ = (hzForward - hzBackward) / (2 * stepSize);
 
     // Gradient direction (ascent vector)
     return new Vector3(gradientX, 0.0f, gradientZ);

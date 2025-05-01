@@ -6,17 +6,20 @@ using UnityEngine.UI;
 
 public class BulletManager : NetworkBehaviour
 {
+    private AudioSource audioSource;
+
     private bool chatSelected = false;
     public GameObject player;
     public float directHitDamage = 33f;
     private Vector3 gun_xyz;
     private float explosionRadius = 40f; // Radius of the explosion
-    private float lastFireTime = 0f;
+    public float lastFireTime = 0f;
     public GameObject bullet_trail_prefab, explosionInstance, bullet;
     public float bulletspeed, dist, hp_damage;
     public float fireRate = 0.7f; // Fire rate in seconds
     public float explosionTime = 3f;
     public GameObject explosionPrefabs;
+    public bool whether2explode = true;
 
     private float fireRateTimer = 0f;
     private PlaneControl pc;
@@ -42,13 +45,23 @@ public class BulletManager : NetworkBehaviour
     public int kills, deaths;
     private bool isOwned;
 
+    public VehicleSwitch vehicleSwitch;
+    private Collider collider;
+
+    void Awake() {
+        vehicleSwitch = GetComponent<VehicleSwitch>();
+    }
+
     void Start()
     {
+        aircraft = transform.gameObject;
+        collider = aircraft.GetComponent<Collider>();
         offset = Random.Range(0f, 0.7f);
         // Get the PlaneControl component (which should be attached to the same GameObject)
         pc = GetComponent<PlaneControl>();
         rb = GetComponent<Rigidbody>();
-        aircraft = transform.gameObject;
+
+        vehicleSwitch = GetComponent<VehicleSwitch>();
 
         if (pc.networkIdentity.isOwned){ // pc.enabled &&
             chatScrollRect = chatScroll.GetComponent<ScrollRect>();
@@ -58,6 +71,7 @@ public class BulletManager : NetworkBehaviour
 
     void Update()
     {
+
          if(pc.networkIdentity.isOwned){ // is pc.enabled
 
            if (Input.GetKeyDown(KeyCode.Return) && !chatSelected) {
@@ -116,7 +130,7 @@ public class BulletManager : NetworkBehaviour
                 dist = Vector3.Distance(explosion, plane.transform.position);
 
                 if (dist < (explosionRadius)){
-                    hp_damage = Mathf.Clamp((-dist+40f)/2,0f,25f); //
+                    hp_damage = Mathf.Clamp((-dist+40f)/2,0f,25f);
 
                     if (pc.isOwned){
                         StartCoroutine(ActivateDamageCross());}
@@ -129,7 +143,7 @@ public class BulletManager : NetworkBehaviour
                         if (plane.healthBar < 0f){
                             kills += 1;
                             plane.GetComponent<BulletManager>().deaths += 1;
-                            //print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
+                            print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
                             killmsg = $"{pc.Username} killed {plane.Username}";
                             chatManager.CmdSendMessage(killmsg, "void");
                         }
@@ -163,6 +177,7 @@ public class BulletManager : NetworkBehaviour
           float spawnTime = Time.time;
           bool exploded = false;
           float elapsedTime = 0f;
+
           while (true){
               if (bullet == null) yield break;
               elapsedTime = Time.time - spawnTime;
@@ -170,11 +185,13 @@ public class BulletManager : NetworkBehaviour
               if (elapsedTime >= explosionTime && !exploded){
                   exploded = true; // Ensure we don't trigger an explosion more than once
 
-                  explosionInstance = Instantiate(explosionPrefabs);
-                  explosionInstance.transform.position = bullet.transform.position;
-                  StartCoroutine(DestroyExplosionAfterTime(explosionInstance, 1f));
-                  NetworkServer.Spawn(explosionInstance);
-                  Expl_damage(bullet.transform.position);
+                  if (whether2explode){
+                    explosionInstance = Instantiate(explosionPrefabs);
+                    explosionInstance.transform.position = bullet.transform.position;
+                    StartCoroutine(DestroyExplosionAfterTime(explosionInstance, 1f));
+                    NetworkServer.Spawn(explosionInstance);
+                    Expl_damage(bullet.transform.position);
+                  }
                   NetworkServer.Destroy(bullet);
 
 
@@ -183,8 +200,6 @@ public class BulletManager : NetworkBehaviour
               yield return null;
           }
       }
-
-
 
     [Command]
     void CmdStartTrail(GameObject bullet){
@@ -198,16 +213,13 @@ public class BulletManager : NetworkBehaviour
 
     [Server]
     public void AICmdShootBullet(Quaternion passed_aim){
-
-        if (Time.time - lastFireTime < fireRate + offset) return;
-
         if (!isServer) return;
 
         lastFireTime = Time.time;
 
          bullet = Instantiate(bullet_trail_prefab);
         NetworkServer.Spawn(bullet);
-        Physics.IgnoreCollision(bullet.GetComponent<Collider>(), aircraft.GetComponent<Collider>());
+        Physics.IgnoreCollision(bullet.GetComponent<Collider>(), collider);
 
         bullet.transform.position = transform.position;
          gun_xyz = new Vector3();
@@ -222,14 +234,15 @@ public class BulletManager : NetworkBehaviour
 
     [Command]
     public void CmdShootBullet(Quaternion gun_quaternion){
-        if (Time.time - lastFireTime < fireRate) return; // Prevent shooting too fast
         if (!isServer) return;
-        
 
-        lastFireTime = Time.time; // Update last fire time
+
          bullet = Instantiate(bullet_trail_prefab);
         NetworkServer.Spawn(bullet);
-        Physics.IgnoreCollision(bullet.GetComponent<Collider>(), aircraft.GetComponent<Collider>());
+        if (collider == null){
+            print($"Bulletmanager cant find plane collider");
+        }
+        Physics.IgnoreCollision(bullet.GetComponent<Collider>(), collider);
 
         bullet.transform.position = transform.position;
          gun_xyz = gun_quaternion * Vector3.forward;

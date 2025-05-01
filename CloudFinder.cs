@@ -60,7 +60,7 @@ public class CloudFinder : NetworkBehaviour
 
 
         //print("Setting atm wind in pcs and particles");
-        UpdatePlayersAtmWind();
+
         // Set wind for planes and gliders
     }
 
@@ -70,10 +70,11 @@ public class CloudFinder : NetworkBehaviour
 
         //set_CloudBase(cloudbase, clouds_overhead_player);
         //set_quickatm_winds(atm_wind);
-        if (terrain != null){
-        UpdateCloudLift();
-      }
+        if (terrain != null && NetworkServer.active && isServer){
+            UpdateCloudLift();
+            UpdatePlayersAtmWind();
         }
+    }
 
 
     IEnumerator FindTerrainInScenes(){
@@ -115,11 +116,21 @@ public class CloudFinder : NetworkBehaviour
 
     [Server]
     public void UpdatePlayersAtmWind(){
-        var playerlist = FindObjectsOfType<PlaneControl>();
-        foreach (var player in playerlist){
+
+      foreach (var netId in NetworkServer.spawned){
+            player = netId.Value.gameObject;
+            rb = player.GetComponent<Rigidbody>();
+            pc = player.GetComponent<PlaneControl>();
+            gc = player.GetComponent<GliderControl>();
             //print($"RpcSetAtmWind CALLED on {player.name}, Wind: {atm_wind_server}");
-            atm_wind_server = new Vector3(0.8f,0f,-1.6f);
-            player.RpcSetAtmWind(atm_wind_server);
+
+            atm_wind_server = new Vector3(1.3f,0f,-1.5f);
+
+            if (player != null){
+                if (pc != null){pc.RpcSetAtmWind(atm_wind_server);}
+                if (gc != null){gc.RpcSetAtmWind(atm_wind_server);}
+
+            }
         }
     }
 

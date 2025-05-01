@@ -12,7 +12,6 @@ using System.Threading;
 
 public class UIManager : NetworkManager
 {
-    public static UIManager Instance; // Singleton instance
     public static Dictionary<NetworkIdentity, GameObject> aircrafts = new();
     public GameObject aiManager;
     private float TimerSpawnDummies = 15f;
@@ -39,110 +38,62 @@ public class UIManager : NetworkManager
     public GameObject bullet_trail_prefab;
     public GameObject MountainRace;
 
-    void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        // Disable Mirror's built-in NetworkManager
-        if (NetworkManager.singleton != null)
-        {
-            Destroy(NetworkManager.singleton.gameObject); // This will destroy Mirror's NetworkManager
-            Debug.Log("Destroyed Mirror's NetworkManager to use custom UIManager");
-        }
-    }
-
     IEnumerator DelayedHostStart(){
 
-        NetworkManager.singleton.sendRate = 30;
 
         #if UNITY_EDITOR
         Debug.Log("🛠 Running in Editor - attempting to start Host...");
 
-    if (NetworkManager.singleton == null)
-    {
-        Debug.LogError("❌ NetworkManager.singleton is null!");
-        yield break;
-    }
+            var transport = NetworkManager.singleton.transport;
+            NetworkManager.singleton.networkAddress = "localhost";
+            NetworkManager.singleton.StartHost();
 
-    var transport = NetworkManager.singleton.transport;
-    if (transport == null)
-    {
-        Debug.LogError("❌ Transport is null!");
-        yield break;
-    }
-
-    NetworkManager.singleton.networkAddress = "localhost";
-
-    try
-    {
-        NetworkManager.singleton.StartHost();
-    }
-    catch (System.Exception ex)
-    {
-        Debug.LogError("🚨 Exception during StartHost(): " + ex.Message);
-        yield break;
-    }
-
-    yield return new WaitUntil(() => NetworkServer.localConnection != null);
-    Debug.Log("✅ Local connection is ready.");
+            yield return new WaitUntil(() => NetworkServer.localConnection != null);
+            Debug.Log("✅ Local connection is ready.");
 
 
-        #elif UNITY_SERVER && UNITY_STANDALONE_OSX
+        #elif UNITY_SERVER && UNITY_STANDALONE_OSX //  TEST A LOCAL (MAC) SERVER
             Debug.Log("🍎🧠 Running as Mac Server - starting Server...");
             var transport = (SimpleWebTransport)NetworkManager.singleton.transport;
-            transport.sslEnabled = false;
+            transport.sslEnabled = false; // Disable SSL for local testing
 
             NetworkManager.singleton.StartServer();
             yield return new WaitUntil(() => NetworkServer.active);
+
             Debug.Log("✅ Server is active.");
             yield break;
 
-        #elif UNITY_SERVER && !UNITY_STANDALONE_OSX
+        #elif UNITY_SERVER && !UNITY_STANDALONE_OSX // THE ACTUAL LINUX SERVER
             Debug.Log("🧠 Running as Dedicated Server - starting Server...");
             var transport = (SimpleWebTransport)NetworkManager.singleton.transport;
             transport.sslEnabled = true;
             transport.sslCertJson = "/etc/letsencrypt/live/v2202501113287307394.goodsrv.de/cert.json";
 
             NetworkManager.singleton.StartServer();
+
             yield return new WaitUntil(() => NetworkServer.active);
             Debug.Log("✅ Server is active.");
             yield break;
 
-        #elif UNITY_STANDALONE_OSX && !UNITY_SERVER
-            Debug.Log("🍎 Running macOS Client - starting Client...");
-            var transport = (SimpleWebTransport)NetworkManager.singleton.transport;
-            transport.sslEnabled = false;
-            NetworkManager.singleton.networkAddress = "localhost";
-            NetworkManager.singleton.StartClient();
-            //NetworkManager.singleton.StartHost();
-            yield return new WaitUntil(() => NetworkServer.localConnection != null);
-            Debug.Log("✅ Local connection is ready.");
-            yield break;
-        #elif UNITY_WEBGL
+        #elif UNITY_WEBGL   // THE CLIENT, CONNECTS EITHER TO LOCALHOST OR TO THE SERVER
             Debug.Log("🌐 Running in WebGL - starting Client...");
             var transport = (SimpleWebTransport)NetworkManager.singleton.transport;
 
+            // To connect to a local test server
+            //NetworkManager.singleton.networkAddress = "127.0.0.1";
+            //transport.sslEnabled = false;
+            //transport.port = 7777;
+            //transport.clientUseWss = false; //
+
+            // To connect to the actual server
             transport.sslEnabled = true;
             NetworkManager.singleton.networkAddress = "v2202501113287307394.goodsrv.de";
-
             NetworkManager.singleton.StartClient();
             // Retry connection in case of failure
             yield return new WaitUntil(() => NetworkClient.isConnected);
 
             if (NetworkClient.isConnected){
-                Debug.Log("✅ Client connected.");
-            }
-            else{
-                Debug.LogError("❌ Failed to connect.");
-                // Optionally retry here or notify the user
+                Debug.Log("✅ Client connected.");   // THIS USUALLY IS THE CASE
             }
             yield break;
         #endif
@@ -150,25 +101,32 @@ public class UIManager : NetworkManager
         yield break;
     }
 
+    void OnDestroy() {
+        Debug.LogError("💥 UIManager destroyed. Singleton: " + (NetworkManager.singleton != null ? NetworkManager.singleton.name : "null"));
+    }
+
 
     public override void Start(){
+        //NetworkManager.singleton = this;
 
-
-
-        //aiManager = FindAIManagerInAnyScene();
-        StartCoroutine(LoadSceneAndSetActive());
-
+        aiManager = FindAIManagerInAnyScene();
+        //StartCoroutine(LoadSceneAndSetActive());
+        DontDestroyOnLoad(this.gameObject);
         StartCoroutine(DelayedHostStart());
 
         StartCoroutine(FindTerrainInScenes());
         //NetworkManager.singleton.sendRate = 30;
         //NetworkManager.singleton.StartServer();
         //NetworkManager.singleton.StartHost();=?˛÷—  QASDF3GV BHNJM,.-PO 1Q
-
+        if (NetworkManager.singleton != this) {
+            Debug.LogWarning("Duplicate NetworkManager detected. Destroying self.");
+            Destroy(this.gameObject);
+            return;
+        }
         //terrain = GameObject.FindWithTag("Terrain");
         base.Start();
 
-        PrintNetworkedObjects();
+        //PrintNetworkedObjects();
         if (Input.GetKeyDown(KeyCode.F11)) {
             Screen.fullScreen = !Screen.fullScreen;  // Toggle fullscreen
         }
@@ -176,8 +134,8 @@ public class UIManager : NetworkManager
 
     private GameObject FindAIManagerInAnyScene() {
         foreach (GameObject obj in GameObject.FindObjectsOfType<GameObject>()) {
-            print(obj.name);
             if (obj.name == "AIManager") {
+                print(" found AI Manager");
                 return obj;
             }
         }
@@ -187,6 +145,7 @@ public class UIManager : NetworkManager
 
     IEnumerator FindTerrainInScenes(){
     while (terrain == null){
+        print(" Searching for terrain");
         for (int i = 0; i < SceneManager.sceneCount; i++){
             Scene scene = SceneManager.GetSceneAt(i);
 
@@ -196,7 +155,10 @@ public class UIManager : NetworkManager
                 foreach (GameObject obj in rootObjects){
                     if (obj.CompareTag("Terrain")){
                         terrain = obj.GetComponent<Terrain>();
-                        if (terrain != null) yield break;
+                        if (terrain != null) {
+                          print(" Found terrain");
+                          yield break;
+                        }
                     }
                 }
             }
@@ -214,6 +176,10 @@ public class UIManager : NetworkManager
           print(" AI Manager not found! ");
             return;
         }
+        if (terrain == null){
+          print(" Terrain not found! ");
+            return;
+        }
 
         if (aiManager.GetComponent<AIManager>().dummyAircraft.Count == 0){
           print(" AI list not initialized");
@@ -224,6 +190,7 @@ public class UIManager : NetworkManager
         if (terrain != null && aiManager != null){
             //print("Spawning dummy AI players...");
             aiManager.GetComponent<AIManager>().SpawnDummyPlayer();
+            print(" Spawning dummy players");
         }else{
             Debug.Log("AIManager is not assigned!");
         }
@@ -272,8 +239,9 @@ public class UIManager : NetworkManager
         //PrintNetworkedObjects();
 
         TimerSpawnDummies += Time.deltaTime;
-        if (TimerSpawnDummies > 1f){
+        if (TimerSpawnDummies > 5f){
             WaitForServerAndTerrainThenSpawnDummy();
+            //PrintNetworkedObjects();
             TimerSpawnDummies = 0f;}
 
         // Iterate through all aircraft in the dictionary

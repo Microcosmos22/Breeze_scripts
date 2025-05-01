@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Mirror;
 
-public class CamFollower : MonoBehaviour
+public class CamFollower : NetworkBehaviour
 {
     public GameObject player;
     private Vector3 offset = new Vector3(-10f, 5f, 10f);
@@ -18,23 +19,30 @@ public class CamFollower : MonoBehaviour
     public float mouseSensitivity = 300f; // Mouse sensitivity
     private float xRotation = 0f; // Vertical rotation
     private float yRotation = 0f; // Horizontal rotation
-    private bool firstPerson = false;
+    public bool firstPerson = false;
 
     public Quaternion cam_rotation;
     public Vector3 position;
     public Vector3 v_offset;
+    private Camera camera;
 
 
     public GameObject gunCrosshair;
     private RawImage gunImg;
+    private RectTransform crossTransf;
+    private float crossSize;
 
+    public VehicleSwitch vehicleSwitch;
 
     // Start is called before the first frame update
     void Start()
     {
+        camera = GetComponent<Camera>();
 
         player = transform.parent.gameObject;
-        gunImg = gunCrosshair.GetComponentInChildren<RawImage>();
+        crossTransf = gunCrosshair.GetComponent<RectTransform>();
+        gunImg = gunCrosshair.GetComponent<RawImage>();
+        vehicleSwitch = GetComponentInParent<VehicleSwitch>();
 
         // This will be called on start. If no UIManager is present, this values will be used (for testing purposes)
         // Initial offset vector  (camera-player) will be kept for testing.
@@ -50,14 +58,27 @@ public class CamFollower : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+      // All of this logs are fine, its only not "created", whatever that means.
+
+      //Debug.Log("Camera is enabled: " + camera.enabled);
+      //Debug.Log("RenderTexture assigned: " + (camera.targetTexture != null));
+      //Debug.Log("RenderTexture is created: " + (camera.targetTexture?.IsCreated() ?? false));
+
+      /*if (isClient) {
+        Debug.LogWarning("camera running as a client!");
+      }*/
+
         if (player != null)
         {
             v_offset = new Vector3(0f, 0f, 0f);
             // Handle camera zoom with mouse wheel
             float scrollInput = Input.GetAxis("Mouse ScrollWheel");
             Camera.main.fieldOfView -= scrollInput * zoomSpeed * 10f; // Adjust FOV
-            Camera.main.fieldOfView = Mathf.Clamp(Camera.main.fieldOfView, 20f, 80f); // Clamp to avoid extreme zoom
+            Camera.main.fieldOfView = Mathf.Clamp(Camera.main.fieldOfView, 40f, 80f); // Clamp to avoid extreme zoom
+            crossSize += scrollInput*zoomSpeed/2f;
+            crossSize = Mathf.Clamp(crossSize, 1f, 2.5f);
 
+            crossTransf.localScale = new Vector3(crossSize, crossSize, crossSize);
             //distance -= scrollInput * zoomSpeed;
             //distance = Mathf.Clamp(distance, minDistance, maxDistance); // Ensure distance is within bounds
 
@@ -84,8 +105,18 @@ public class CamFollower : MonoBehaviour
             }
 
             if(firstPerson){
-                position = player.transform.position + player.transform.up*1f;
+
                 gunImg.enabled = true;
+                if (vehicleSwitch.vehicletype == "pc"){
+                    position = player.transform.position + player.transform.up*1f;
+
+                }else if (vehicleSwitch.vehicletype == "gc"){
+                    position = player.transform.position + player.transform.up*1f - player.transform.forward*2.5f;
+                    cam_rotation = transform.parent.rotation; //Quaternion.LookRotation(transform.parent.forward);
+
+                }else if ( vehicleSwitch == null){
+                    print(" cam couldnt find vehicle type");
+                }
             }else{
                 Camera.main.fieldOfView = 60f;
                 position = player.transform.position - cam_rotation * Vector3.forward * 20f + v_offset;
@@ -102,6 +133,21 @@ public class CamFollower : MonoBehaviour
     public Quaternion get_camera_quaternion(){
       return cam_rotation;
     }
+
+    public Quaternion get_camera_quaternion_with_error(float maxAngleErrorDegrees = 2.5f)
+{
+    // Original rotation
+    Quaternion baseRotation = cam_rotation;
+
+    // Create a small random rotation
+    Vector3 randomAxis = Random.onUnitSphere; // random direction
+    float angleError = Random.Range(-maxAngleErrorDegrees, maxAngleErrorDegrees);
+
+    Quaternion errorRotation = Quaternion.AngleAxis(angleError, randomAxis);
+
+    // Apply the error to the original rotation
+    return errorRotation * baseRotation;
+}
 
     public void set_camera(Vector3 offset_i, Vector3 rotation_i)
     {
