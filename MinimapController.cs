@@ -49,7 +49,6 @@ public class MinimapController : NetworkBehaviour
       }
       enemyIcons = new List<RectTransform>();
 
-      print($"planes.Count = {planes.Count}, planeN = {planeN}");
 
       for (int i = 0; i < planes.Count; i++){
 
@@ -84,8 +83,8 @@ public class MinimapController : NetworkBehaviour
     }
 
 
-    [Server]
     private void FindAllPlanesInAllScenes(){
+
         planes = new List<GameObject>();
 
         for (int i = 0; i < 1; i++){
@@ -106,7 +105,6 @@ public class MinimapController : NetworkBehaviour
 
 
     void Update(){
-      if (isServer) return;
 
       instIcons();
 

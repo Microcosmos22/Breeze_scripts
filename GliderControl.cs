@@ -137,7 +137,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
         }else{lift = lift*0;
         }
 
-        print($"aer forces: {drag}, {lift}, {aerodyn_force}");
+        //print($"aer forces: {drag}, {lift}, {aerodyn_force}");
         print($"ext forces: {slope_vel}, {cloud_suction}");
 
         gravity = new Vector3(0f, -5f, 0f);

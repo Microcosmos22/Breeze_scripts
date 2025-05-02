@@ -137,6 +137,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
 
                       bulletManager.lastFireTime = Time.time; // Update last fire time
                       if (isLocalPlayer && NetworkClient.isConnected && isOwned){
+
                           bulletManager.CmdShootBullet(camFollow.get_camera_quaternion());
                       }}
 
@@ -236,7 +237,6 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
       StartCoroutine(FindTerrainInScenes());
       gunCoolTimer = UnityEngine.Random.Range(0f, 8f);
 
-      Component[] components = GetComponents<Component>();
       bulletManager = GetComponent<BulletManager>();
       networkIdentity = GetComponent<NetworkIdentity>();
 
@@ -337,8 +337,8 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     }
 
     public void set_initpos(){
-        //transform.position = new Vector3(15f, 15f, 1015f);
-        transform.position = new Vector3( 650f, 320f, 300f );
+        transform.position = new Vector3(15f, 15f, 1015f);
+        //transform.position = new Vector3( 400f, 140f, 500f );
         rb.linearVelocity = transform.forward * 5f;
         healthBar = 100f;
     }
@@ -347,7 +347,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public void TargetSetInitpos(NetworkConnection target){
 
         //transform.position = new Vector3(5f, 15f, 1015f);
-        transform.position = new Vector3(500f, 100f, 500f);
+        transform.position = new Vector3(500f, 100f, 600f);
         rb.linearVelocity = transform.forward * 5f;
         healthBar = 100f;
     }
@@ -366,6 +366,8 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public void OnCollisionEnter(Collision collision){
       if (!enabled) return;
       if (!isServer) return;
+
+      Debug.Log("Collision with: " + collision.gameObject.name);
 
       if (networkIdentity.isOwned){ // Player
           if (collision.gameObject.CompareTag("Terrain")){

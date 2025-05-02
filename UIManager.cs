@@ -80,14 +80,14 @@ public class UIManager : NetworkManager
             var transport = (SimpleWebTransport)NetworkManager.singleton.transport;
 
             // To connect to a local test server
-            //NetworkManager.singleton.networkAddress = "127.0.0.1";
-            //transport.sslEnabled = false;
-            //transport.port = 7777;
-            //transport.clientUseWss = false; //
+            NetworkManager.singleton.networkAddress = "127.0.0.1";
+            transport.sslEnabled = false;
+            transport.port = 7777;
+            transport.clientUseWss = false; //
 
             // To connect to the actual server
-            transport.sslEnabled = true;
-            NetworkManager.singleton.networkAddress = "v2202501113287307394.goodsrv.de";
+            //transport.sslEnabled = true;
+            //NetworkManager.singleton.networkAddress = "v2202501113287307394.goodsrv.de";
             NetworkManager.singleton.StartClient();
             // Retry connection in case of failure
             yield return new WaitUntil(() => NetworkClient.isConnected);

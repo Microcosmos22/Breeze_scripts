@@ -23,8 +23,9 @@ public class ChatManager : NetworkBehaviour
   private List<int> sortedI = new List<int>();
   private List<string> lbStrings = new List<string>();
 
-  private float updatePlayersTimer = 5f, updatePlayersTime;
-  private int nPlayers;
+  private float updatePlayersTimer = 1f, updatePlayersTime;
+  private int nPlayers = 0, nAIs = 0;
+  private ChatManager chat;
 
   void Start(){
 
@@ -37,14 +38,13 @@ public class ChatManager : NetworkBehaviour
           updatePlayersTime = 0f;
           if (isServer){
               SetupAircrafts();
-              RpcSendLeaderboard(Username.ToArray(), kills.ToArray(), deaths.ToArray());}
+              GetKills();
+              UpdateLeaderboard(Username.ToArray(), kills.ToArray(), deaths.ToArray());}
       }
-
-      GetKills();
-
 
   }
 
+  [Server]
   void SetupAircrafts(){
     // Update list of player ChatText, LBText etc. references regularly.
 
@@ -52,12 +52,13 @@ public class ChatManager : NetworkBehaviour
     lbText = new List<TextMeshProUGUI>();
     bulletManagers = new List<BulletManager>();
     VertLayoutGroups = new List<GameObject>();
+    kills = new List<int>();
     nPlayers = 0;
+    nAIs = 0;
 
     foreach (var netId in NetworkServer.spawned){
         var obj = netId.Value.gameObject;
         var plane = obj.GetComponent<PlaneControl>();
-        print(obj.name);
 
         if (plane != null){
             if (plane.networkIdentity.isOwned){ // found a Player PlaneControl
@@ -73,28 +74,39 @@ public class ChatManager : NetworkBehaviour
                 nPlayers += 1;
                 kills.Add(0);
                 deaths.Add(0);
+            }else{
+                bulletManagers.Add(plane.bulletManager);
+                Username.Add(plane.Username);
+                nAIs += 1;
+                kills.Add(0);
+                deaths.Add(0);
             }
       }
       }
-      print($"ChatManager found {nPlayers} players");
+      print($"ChatManager found {nPlayers} players and {nAIs} AIs");
   }
 
   void GetKills(){
-      for (int i = 0; i < nPlayers; i++){
-          kills[i] = bulletManagers[i].kills;
-          deaths[i] = bulletManagers[i].deaths;
+
+      for (int i = 0; i < (nPlayers+nAIs); i++){
+          if (i < kills.Count && i < bulletManagers.Count){
+              kills[i] = bulletManagers[i].kills;
+              deaths[i] = bulletManagers[i].deaths;}
       }
   }
 
-  [ClientRpc]
-  void RpcSendLeaderboard(string[] usernames, int[] kills, int[] deaths){
+  void UpdateLeaderboard(string[] usernames, int[] kills, int[] deaths){
       List<int> score = new List<int>();       // Score list (kills - deaths)
       List<string> lbStrings = new List<string>();  // Unsorted leaderboard lines
 
+      print("Send leaderboard");
+
       // Build scores and leaderboard strings
-      for (int i = 0; i < nPlayers; i++){
+      for (int i = 0; i < (nPlayers+nAIs); i++){
           score.Add(kills[i] - deaths[i]);
           lbStrings.Add($" {kills[i]} | {deaths[i]}| {kills[i] - deaths[i]} | {Username[i]}");
+          //print($" {kills[i]} | {deaths[i]}| {kills[i] - deaths[i]} | {Username[i]}");
+
       }
 
       // Get sorted indices
@@ -104,10 +116,14 @@ public class ChatManager : NetworkBehaviour
           .Select(pair => pair.index)
           .ToList();
 
-      // Create final leaderboard string in sorted order
-      string fullLeaderboard = string.Join("\n", sortedI.Select(i => lbStrings[i]));
-      print(fullLeaderboard);
 
+        string firstFiveLB = string.Join("\n", sortedI.Take(5).Select(i => lbStrings[i]));
+        RpcSendLeaderboard(firstFiveLB);
+    }
+
+
+      [ClientRpc]
+      void RpcSendLeaderboard(string fullLeaderboard){
       // Update the UI
       foreach (var lb in lbText){
           lb.text = fullLeaderboard;
@@ -119,11 +135,22 @@ public class ChatManager : NetworkBehaviour
       }
   }
 
+    // One ChatManager for each client and one in the server
     [Command(requiresAuthority = false)]
-    public void CmdSendMessage(string message, string username)
-    {
-      RpcAddMessage($"{username}: {message}");
+    public void CmdSendMessage(string message, string username){
+        ChatManager chat = FindObjectOfType<ChatManager>();
+        if (chat != null){
+            chat.ServerBroadcastMessage($"{username}: {message}", this); // or pass username, etc.
+        }
     }
+
+    [Server]
+    public void ServerBroadcastMessage(string message, NetworkBehaviour sender)
+    {
+        // Do server logic here
+        RpcAddMessage(message);
+    }
+
 
     [ClientRpc]
     public void RpcAddMessage(string message)

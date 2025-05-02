@@ -86,7 +86,7 @@ public class Instr_update : MonoBehaviour
 
             if (vehicleSwitch.vehicletype == "pc"){ healthBarTrans.sizeDelta = new Vector2(pc.healthBar*2f, healthBarTrans.sizeDelta.y);}
             else if ( vehicleSwitch.vehicletype == "gc") {healthBarTrans.sizeDelta = new Vector2(gc.healthBar*2f, healthBarTrans.sizeDelta.y);}
-            coolBarTrans.sizeDelta = new Vector2((1-Mathf.Clamp(gc.gunCoolTimer/gc.gunUptime, 0f, 1f))*200f ,coolBarTrans.sizeDelta.y);
+            coolBarTrans.sizeDelta = new Vector2((1-Mathf.Clamp(pc.gunCoolTimer/pc.gunUptime, 0f, 1f))*200f ,coolBarTrans.sizeDelta.y);
 
             verticalVelocity = rb.linearVelocity.y;
             verticalVelocitySlider.value = -verticalVelocity; //rectTransform.localScale;
@@ -123,7 +123,7 @@ public class Instr_update : MonoBehaviour
             if (rb != null){
 
             healthBarTrans.sizeDelta = new Vector2(pc.healthBar*2f, healthBarTrans.sizeDelta.y);
-            coolBarTrans.sizeDelta = new Vector2((1-Mathf.Clamp(pc.gunCoolTimer/pc.gunUptime, 0f, 1f))*200f ,coolBarTrans.sizeDelta.y);
+            coolBarTrans.sizeDelta = new Vector2((1-Mathf.Clamp(gc.gunCoolTimer/gc.gunUptime, 0f, 1f))*200f ,coolBarTrans.sizeDelta.y);
 
             verticalVelocity = rb.linearVelocity.y;
             verticalVelocitySlider.value = -gc.slope_vel[1] - gc.cloud_suction[1]; //rectTransform.localScale;

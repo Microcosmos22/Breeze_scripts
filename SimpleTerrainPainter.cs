@@ -20,10 +20,13 @@ private float[,] treedensity = new float[3, 4]
 };
 
     void Start(){
-        for (int i = 0; i < terrain.terrainData.detailPrototypes.Length; i++) terrain.terrainData.SetDetailLayer(0, 0, i, new int[terrain.terrainData.detailWidth, terrain.terrainData.detailHeight]);
-        //Console.Writeline($"The Money you have now are: {CountAllDetails()}");
+        for (int i = 0; i < terrain.terrainData.detailPrototypes.Length; i++)
+        {terrain.terrainData.SetDetailLayer(0, 0, i, new int[terrain.terrainData.detailWidth, terrain.terrainData.detailHeight]);
+        }
+
         Amount_normallayers = 4;
         PaintTerrainLayers();
+        print($" Amount of details spawned: {CountAllDetails()}");
     }
 
     void PaintTerrainLayers(){
@@ -111,7 +114,8 @@ private float[,] treedensity = new float[3, 4]
                 {
                     if (steep < 0.3f){ // Farm fields
                         splatmapData[z, x, 5] = 1.0f;
-                    } else if (steep > 1.5f){ // Forest terrain
+                        //splatmapData[z, x, 1] = 1.0f;
+                    } else if (steep > 1.5f){ // Hills with trees
                         if (normalizedHeight > 0.06f){   // Spawn fruit trees
                             if ((UnityEngine.Random.value < treedensity[2,0])){
 
@@ -122,7 +126,8 @@ private float[,] treedensity = new float[3, 4]
                                 heightScale = 3.0f,
                                 prototypeIndex = 2};
                             treeInstances.Add(treeInstance);}}
-                        splatmapData[z, x, 1] = 1.0f;
+                      splatmapData[z, x, 0] = 1.0f;
+                      detailLayerGreen[z, x] = detailDensity;
 
                     }else{              // Grass terrain
                         if (normalizedHeight > 0.06f){   // Spawn fruit trees
@@ -140,8 +145,6 @@ private float[,] treedensity = new float[3, 4]
                     detailLayerGreen[z, x] = detailDensity;
 
 
-
-
                 }
                 else if (normalizedHeight > 0.2f && normalizedHeight <= 0.3f)    // NOT DENSE FOREST
                 {
@@ -149,8 +152,8 @@ private float[,] treedensity = new float[3, 4]
 
                     // Set splatmap for forests
                     splatmapData[z, x, 1] = 1.0f;
-                    //detailLayerForest[z, x] = 2;
-                    //detailLayerFlower[z, x] = 2;
+                    detailLayerGreen[z, x] = 2;
+                    detailLayerFlower[z, x] = 2;
 
 
                     if ((UnityEngine.Random.value < treedensity[0,1])){
@@ -178,8 +181,8 @@ private float[,] treedensity = new float[3, 4]
 
                     // Set splatmap for forests
                     splatmapData[z, x, 1] = 1.0f;
-                    //detailLayerForest[z, x] = 2;
-                    //detailLayerFlower[z, x] = 2;
+                    detailLayerForest[z, x] = 2;
+                    detailLayerFlower[z, x] = 2;
 
 
                     if ((UnityEngine.Random.value < treedensity[0,2]*1.5f)){
@@ -223,6 +226,8 @@ private float[,] treedensity = new float[3, 4]
                             prototypeIndex = 1};
                         treeInstances.Add(treeInstance);}
                 }
+
+
             }
         }
         print("splat length"+splatmapData.Length.ToString());
@@ -231,11 +236,11 @@ private float[,] treedensity = new float[3, 4]
         terrainData.SetAlphamaps(0, 0, splatmapData);
         terrainData.SetDetailLayer(0, 0, 0, detailLayerGreen);
         terrainData.SetDetailLayer(0, 0, 1, detailLayerForest);
-        terrainData.SetDetailLayer(0, 0, 0, detailLayerGreen);
+        //terrainData.SetDetailLayer(0, 0, 0, detailLayerGreen);
 
         terrainData.treeInstances = treeInstances.ToArray();
         terrain.Flush(); // Apply changes to the terrain
-        //terrain.terrainData.RefreshPrototypes();
+        terrain.terrainData.RefreshPrototypes();
 
 
 

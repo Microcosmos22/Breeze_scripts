@@ -48,7 +48,7 @@ public class AIManager : MonoBehaviour
 
     void Start(){
 
-        NAIs = 2;
+        NAIs = 10;
         for (int i = 0; i < NAIs; i++) {
             dummyAircraft.Add(null); // Fills the list with nulls
             dummyPlaneControl.Add(null);
@@ -112,7 +112,7 @@ public class AIManager : MonoBehaviour
                     }
                     timeOutside[i] += Time.deltaTime; //
 
-                    if (timeOutside[i] >= 10f){
+                    if (timeOutside[i] >= 0.5f){
                         target_direction = setCourse_outsidemap(pos);
                         timeOutside[i] = 0f; // Reset the timer
                     }
@@ -132,7 +132,7 @@ public class AIManager : MonoBehaviour
 
                  }else{
                     target_direction = Vector3.zero;
-                    
+
                  }
 
                 if (target_direction != Vector3.zero){
