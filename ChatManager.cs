@@ -61,7 +61,7 @@ public class ChatManager : NetworkBehaviour
         var plane = obj.GetComponent<PlaneControl>();
 
         if (plane != null){
-            if (plane.networkIdentity.isOwned){ // found a Player PlaneControl
+            if (!plane.isAI){ // found a Player
                 bulletManagers.Add(plane.bulletManager);
                 chatText.Add(plane.bulletManager.chatText);
                 lbText.Add(plane.bulletManager.lbText);

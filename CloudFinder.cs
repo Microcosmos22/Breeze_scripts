@@ -124,7 +124,7 @@ public class CloudFinder : NetworkBehaviour
             gc = player.GetComponent<GliderControl>();
             //print($"RpcSetAtmWind CALLED on {player.name}, Wind: {atm_wind_server}");
 
-            atm_wind_server = new Vector3(1.3f,0f,-1.5f);
+            atm_wind_server = new Vector3(1.7f,0f,-1.9f);
 
             if (player != null){
                 if (pc != null){pc.RpcSetAtmWind(atm_wind_server);}

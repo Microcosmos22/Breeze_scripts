@@ -24,6 +24,8 @@ public class Bullet : NetworkBehaviour
     }
 
     void OnCollisionEnter(Collision collision){
+      if (!isServer) return;
+      
         pc = collision.gameObject.GetComponent<PlaneControl>();
 
         if (collision.gameObject.CompareTag("AI")){

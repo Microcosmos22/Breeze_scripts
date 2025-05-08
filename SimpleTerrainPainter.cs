@@ -105,13 +105,10 @@ private float[,] treedensity = new float[3, 4]
 
 
                 if (steep > 3.0f){                                                  //    CLIFF
-
                     splatmapData[z, x, 2] = 1.0f;
-
                 }
 
-                else if (normalizedHeight <= 0.2f)                                   // GRASS
-                {
+                else if (normalizedHeight <= 0.2f){       // GRASS
                     if (steep < 0.3f){ // Farm fields
                         splatmapData[z, x, 5] = 1.0f;
                         //splatmapData[z, x, 1] = 1.0f;
@@ -141,13 +138,8 @@ private float[,] treedensity = new float[3, 4]
                             treeInstances.Add(treeInstance);}}
                         splatmapData[z, x, 0] = 1.0f;
                     }
-
                     detailLayerGreen[z, x] = detailDensity;
-
-
-                }
-                else if (normalizedHeight > 0.2f && normalizedHeight <= 0.3f)    // NOT DENSE FOREST
-                {
+                }else if (normalizedHeight > 0.2f && normalizedHeight <= 0.3f){  // NOT DENSE FOREST
                     float xnmh = normalizedHeight;
 
                     // Set splatmap for forests
@@ -218,8 +210,7 @@ private float[,] treedensity = new float[3, 4]
                     }
 
                     if ((UnityEngine.Random.value < treedensity[1,3])){
-                        TreeInstance treeInstance = new TreeInstance
-                        {
+                        TreeInstance treeInstance = new TreeInstance{
                             position = new Vector3((float)x/terrainData.size.x, ho/ terrainData.size.y, (float)z/terrainData.size.z),
                             widthScale = 3.0f,
                             heightScale = 3.0f,

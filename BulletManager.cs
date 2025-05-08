@@ -24,7 +24,7 @@ public class BulletManager : NetworkBehaviour
     private float fireRateTimer = 0f;
     private PlaneControl pc;
     private Rigidbody rb;
-    private GameObject aircraft;
+    private GameObject aircraft, vfx;
     private float offset;
 
     public GameObject chat;
@@ -109,11 +109,12 @@ public class BulletManager : NetworkBehaviour
       }
         fireRateTimer += Time.deltaTime;
     }
-    [Server]
+
     public IEnumerator DestroyExplosionAfterTime(GameObject explosionInstance, float time){
 
+
         yield return new WaitForSeconds(time);
-        NetworkServer.Destroy(explosionInstance);
+        Destroy(explosionInstance);
     }
 
     private IEnumerator ActivateDamageCross(){
@@ -141,7 +142,7 @@ public class BulletManager : NetworkBehaviour
                         StartCoroutine(ActivateDamageCross());}
 
 
-                    if (!plane.networkIdentity.isOwned){ // AI
+                    if (plane.isAI){ // AI
                         plane.healthBar -= hp_damage;
                         //print($"🚨 Health: {plane.healthBar} to {plane.Username} at distance {dist} < {explosionRadius}");
 
@@ -179,26 +180,23 @@ public class BulletManager : NetworkBehaviour
 
     [Server]
     public IEnumerator Ballistics(GameObject bullet){
-        float spawnTime = Time.realtimeSinceStartup;
+        float spawnTime = Time.time;
         bool exploded = false;
         float elapsedTime = 0f;
 
         while (true){
             if (bullet == null) yield break;
-            elapsedTime = Time.realtimeSinceStartup - spawnTime;
+            elapsedTime = Time.time - spawnTime;
 
             if (elapsedTime >= explosionTime && !exploded){
                 exploded = true; // Ensure we don't trigger an explosion more than once
 
                 if (whether2explode){
-                  explosionInstance = Instantiate(explosionPrefabs);
-                  explosionInstance.transform.position = bullet.transform.position;
-                  StartCoroutine(DestroyExplosionAfterTime(explosionInstance, 1f));
-                  NetworkServer.Spawn(explosionInstance);
                   Expl_damage(bullet.transform.position);
+                  RpcSpawnExplosion(bullet.transform.position);
+                  print("server bullet explode");
                 }
                 NetworkServer.Destroy(bullet);
-
 
                 yield break;
             }
@@ -206,47 +204,16 @@ public class BulletManager : NetworkBehaviour
         }
     }
 
-
-        [Server]
-        public IEnumerator Ballistics(GameObject bullet){
-
-            float spawnTime = Time.realtimeSinceStartup;
-            bool exploded = false;
-            float elapsedTime = 0f;
-
-            while (true){
-                if (bullet == null) yield break;
-                elapsedTime = Time.realtimeSinceStartup - spawnTime;
-
-                if (elapsedTime >= explosionTime && !exploded){
-                    exploded = true; // Ensure we don't trigger an explosion more than once
-
-                    if (whether2explode){
-                      explosionInstance = Instantiate(explosionPrefabs);
-                      explosionInstance.transform.position = bullet.transform.position;
-                      StartCoroutine(DestroyExplosionAfterTime(explosionInstance, 1f));
-                      NetworkServer.Spawn(explosionInstance);
-                      Expl_damage(bullet.transform.position);
-                    }
-                    NetworkServer.Destroy(bullet);
-
-
-                    yield break;
-                }
-                yield return null;
-            }
-        }
-
-    [Server]
-    void CmdStartTrail(GameObject bullet){
-        if (!isServer) return;
-        print("cmdstart trail");
-        StartCoroutine(Ballistics(bullet));
+    [ClientRpc]
+    void RpcSpawnExplosion(Vector3 position) {
+        vfx = Instantiate(explosionPrefabs, position, Quaternion.identity);
+        StartCoroutine(DestroyExplosionAfterTime(vfx, 1f));
     }
 
     [Server]
-    void AICmdStartTrail(GameObject bullet){
+    void SrvStartTrail(GameObject bullet){
         if (!isServer) return;
+        print("cmdstart trail");
         StartCoroutine(Ballistics(bullet));
     }
 
@@ -256,45 +223,34 @@ public class BulletManager : NetworkBehaviour
 
         lastFireTime = Time.time;
 
-         bullet = Instantiate(bullet_trail_prefab);
-        NetworkServer.Spawn(bullet);
+        bullet = Instantiate(bullet_trail_prefab);
         Physics.IgnoreCollision(bullet.GetComponent<Collider>(), collider);
 
         bullet.transform.position = transform.position;
-         gun_xyz = new Vector3();
+        gun_xyz = new Vector3();
         gun_xyz = passed_aim * Vector3.forward;
-        bullet.GetComponent<Rigidbody>().linearVelocity = rb.linearVelocity + gun_xyz * bulletspeed;
+        bullet.GetComponent<Rigidbody>().linearVelocity = gun_xyz * bulletspeed;
+        NetworkServer.Spawn(bullet);
 
-        AICmdStartTrail(bullet);
+        SrvStartTrail(bullet);
+        //RpcStartTrail( transform.position, rb.linearVelocity + gun_xyz * bulletspeed);
         fireRateTimer = 0f;
 
     }
 
-    [ClientRpc]
-    void RpcStartTrail(Vector3 position, Vector3 velocity){
-        if (isServer) return; // skip host
-        GameObject local_bullet = Instantiate(bullet_trail_prefab, position);
-        local_bullet.GetComponent<Rigidbody>().linearVelocity = velocity;
-    }
-
-
     [Command]
     public void CmdShootBullet(Quaternion gun_quaternion){
 
-         bullet = Instantiate(bullet_trail_prefab);
-        //NetworkServer.Spawn(bullet);
-        if (collider == null){
-            print($"Bulletmanager cant find plane collider");
-        }
+        bullet = Instantiate(bullet_trail_prefab);
         Physics.IgnoreCollision(bullet.GetComponent<Collider>(), collider);
 
         bullet.transform.position = transform.position;
-         gun_xyz = gun_quaternion * Vector3.forward;
-
+        gun_xyz = gun_quaternion * Vector3.forward;
         bullet.GetComponent<Rigidbody>().linearVelocity = rb.linearVelocity + gun_xyz * bulletspeed;
+        NetworkServer.Spawn(bullet);
 
-        CmdStartTrail(bullet);
-        RpcStartTrail( transform.position, rb.linearVelocity + gun_xyz * bulletspeed);
+        SrvStartTrail(bullet);
+        //RpcStartTrail( transform.position, rb.linearVelocity + gun_xyz * bulletspeed);
     }
 
 }

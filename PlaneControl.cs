@@ -121,6 +121,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
               scrollInput = Input.GetAxis("Mouse ScrollWheel");
               bulletManager.explosionTime += scrollInput * 2f; // Adjust FOV
               bulletManager.explosionTime = Mathf.Clamp(bulletManager.explosionTime, 52f/bulletManager.bulletspeed, 360f/bulletManager.bulletspeed);
+              CmdUpdateExplosionTime(bulletManager.explosionTime);
 
               if(gunCoolTimer > 0f && !Input.GetMouseButton(0)){ // Counts down in both cases, isCoolingDown and !isCoolingDown
                   gunCoolTimer -= Time.deltaTime;
@@ -212,6 +213,11 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
             //cloud_suction = new Vector3(0f,0f,0f);
             }
         }
+
+    [Command]
+    void CmdUpdateExplosionTime(float time) {
+        bulletManager.explosionTime = time;
+    }
 
     public void setAim(Quaternion newAim){
         aimAIQ = newAim;
@@ -369,11 +375,12 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
 
       Debug.Log("Collision with: " + collision.gameObject.name);
 
-      if (networkIdentity.isOwned){ // Player
+      if (!isAI){ // Player
           if (collision.gameObject.CompareTag("Terrain")){
               healthBar -= 102f; // Damage in server, then damage the client
               TargetTakeDamage(networkIdentity.connectionToClient, 102f);
               bulletManager.deaths += 1;
+              print(" player against terrain");
           }
       }else{                        // AI
           if (collision.gameObject.CompareTag("Terrain")){
