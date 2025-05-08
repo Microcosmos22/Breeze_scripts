@@ -119,7 +119,7 @@ public class CamFollower : NetworkBehaviour
                 }
             }else{
                 Camera.main.fieldOfView = 60f;
-                position = player.transform.position - cam_rotation * Vector3.forward * 20f + v_offset;
+                position = player.transform.position - cam_rotation * Vector3.forward * 10f + v_offset;
                 gunImg.enabled = false;
             }
 

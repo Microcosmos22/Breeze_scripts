@@ -111,8 +111,6 @@ public class BulletManager : NetworkBehaviour
     }
 
     public IEnumerator DestroyExplosionAfterTime(GameObject explosionInstance, float time){
-
-
         yield return new WaitForSeconds(time);
         Destroy(explosionInstance);
     }
@@ -213,13 +211,14 @@ public class BulletManager : NetworkBehaviour
     [Server]
     void SrvStartTrail(GameObject bullet){
         if (!isServer) return;
-        print("cmdstart trail");
+        
         StartCoroutine(Ballistics(bullet));
     }
 
     [Server]
     public void AICmdShootBullet(Quaternion passed_aim){
         if (!isServer) return;
+        print("AI shot");
 
         lastFireTime = Time.time;
 
@@ -229,7 +228,7 @@ public class BulletManager : NetworkBehaviour
         bullet.transform.position = transform.position;
         gun_xyz = new Vector3();
         gun_xyz = passed_aim * Vector3.forward;
-        bullet.GetComponent<Rigidbody>().linearVelocity = gun_xyz * bulletspeed;
+        bullet.GetComponent<Rigidbody>().linearVelocity = rb.linearVelocity + gun_xyz * bulletspeed;
         NetworkServer.Spawn(bullet);
 
         SrvStartTrail(bullet);

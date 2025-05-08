@@ -39,10 +39,12 @@ public class CloudFinder : NetworkBehaviour
     public ParticleForceField[] forcefields;
 
     private bool tornado_present;
+    private WindZone windZone;
 
     // Start is called before the first frame update
     void Start(){
         StartCoroutine(FindTerrainInScenes());
+        windZone = GetComponentInChildren<WindZone>();
 
         GameObject terrainObject = null;
 
@@ -116,6 +118,9 @@ public class CloudFinder : NetworkBehaviour
 
     [Server]
     public void UpdatePlayersAtmWind(){
+      atm_wind_server = new Vector3(1.7f,0f,-1.9f);
+
+      windZone.transform.rotation = Quaternion.LookRotation(atm_wind_server);
 
       foreach (var netId in NetworkServer.spawned){
             player = netId.Value.gameObject;
@@ -124,7 +129,7 @@ public class CloudFinder : NetworkBehaviour
             gc = player.GetComponent<GliderControl>();
             //print($"RpcSetAtmWind CALLED on {player.name}, Wind: {atm_wind_server}");
 
-            atm_wind_server = new Vector3(1.7f,0f,-1.9f);
+
 
             if (player != null){
                 if (pc != null){pc.RpcSetAtmWind(atm_wind_server);}

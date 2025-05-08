@@ -44,6 +44,7 @@ private float[,] treedensity = new float[3, 4]
         float[,] heights = terrainData.GetHeights(0, 0, width, height);
 
 
+
         // Initialize the splatmap data array
         float[,,] splatmapData = new float[width, height, terrainData.alphamapLayers];
 
@@ -79,6 +80,8 @@ private float[,] treedensity = new float[3, 4]
         {
             for (int x = 0; x < width; x++)
             {
+                int detailX = Mathf.FloorToInt((float)x / width * terrainData.detailWidth);
+                int detailZ = Mathf.FloorToInt((float)z / height * terrainData.detailHeight);
                 // Map alphamap coordinates to heightmap coordinates
                 float heightmapX = ((float)x + offsetX) / width * heightmapWidth;
                 float heightmapZ = ((float)z + offsetZ) / height * heightmapHeight;
@@ -101,6 +104,8 @@ private float[,] treedensity = new float[3, 4]
                 // Use Pythagoras theorem to combine the two slopes into one final steepness value
                 float steep = Mathf.Sqrt(slopeX * slopeX + slopeZ * slopeZ);
                 ///////////////
+                int detailWidth = terrainData.detailWidth;
+                int detailHeight = terrainData.detailHeight;
 
 
 
@@ -109,10 +114,10 @@ private float[,] treedensity = new float[3, 4]
                 }
 
                 else if (normalizedHeight <= 0.2f){       // GRASS
-                    if (steep < 0.3f){ // Farm fields
+                    if (steep < 0.3f){ // Farm fields    VERY FLAT
                         splatmapData[z, x, 5] = 1.0f;
                         //splatmapData[z, x, 1] = 1.0f;
-                    } else if (steep > 1.5f){ // Hills with trees
+                    } else if (steep > 1.5f){ //          VERY STEEP
                         if (normalizedHeight > 0.06f){   // Spawn fruit trees
                             if ((UnityEngine.Random.value < treedensity[2,0])){
 
@@ -124,7 +129,9 @@ private float[,] treedensity = new float[3, 4]
                                 prototypeIndex = 2};
                             treeInstances.Add(treeInstance);}}
                       splatmapData[z, x, 0] = 1.0f;
-                      detailLayerGreen[z, x] = detailDensity;
+                      detailLayerGreen[detailZ, detailX] = 3;
+                      detailLayerForest[detailZ, detailX] = 1;
+
 
                     }else{              // Grass terrain
                         if (normalizedHeight > 0.06f){   // Spawn fruit trees
@@ -137,14 +144,17 @@ private float[,] treedensity = new float[3, 4]
                                 prototypeIndex = 2};
                             treeInstances.Add(treeInstance);}}
                         splatmapData[z, x, 0] = 1.0f;
+                        detailLayerGreen[detailZ, detailX] = detailDensity;
                     }
-                    detailLayerGreen[z, x] = detailDensity;
+
+
                 }else if (normalizedHeight > 0.2f && normalizedHeight <= 0.3f){  // NOT DENSE FOREST
                     float xnmh = normalizedHeight;
 
                     // Set splatmap for forests
                     splatmapData[z, x, 1] = 1.0f;
-                    detailLayerGreen[z, x] = 2;
+                    detailLayerForest[detailZ, detailX] = 4;
+                    detailLayerGreen[detailZ, detailX] = 2;
                     detailLayerFlower[z, x] = 2;
 
 
@@ -173,7 +183,7 @@ private float[,] treedensity = new float[3, 4]
 
                     // Set splatmap for forests
                     splatmapData[z, x, 1] = 1.0f;
-                    detailLayerForest[z, x] = 2;
+                    detailLayerForest[detailZ, detailX] = 2;
                     detailLayerFlower[z, x] = 2;
 
 
@@ -217,6 +227,13 @@ private float[,] treedensity = new float[3, 4]
                             prototypeIndex = 1};
                         treeInstances.Add(treeInstance);}
                 }
+
+
+                /*if (Mathf.Abs(x - z) < 20){
+                    detailLayerGreen[z, x] = detailDensity;
+                }else{
+                    detailLayerGreen[z, x] = 0;
+                }*/
 
 
             }

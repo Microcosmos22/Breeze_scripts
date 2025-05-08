@@ -82,7 +82,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public bool isCoolingDown = false;
     public string Username;
 
-    public GameObject explosionPrefabs;
+    public GameObject explosionPrefabs, vfx;
     private GameObject explosionInstance;
 
 
@@ -112,9 +112,8 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
               else if(healthBar<0f){
 
                   healthBar = 100f;
-                  explosionInstance = Instantiate(explosionPrefabs);
-                  explosionInstance.transform.position = transform.position;
-                  StartCoroutine(bulletManager.DestroyExplosionAfterTime(explosionInstance, 1f));
+                  RpcSpawnExplosion(transform.position);
+
                   set_initpos();
               }
 
@@ -172,36 +171,40 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
 
             }else if(isAI){ // For AI
 
-              if(gunCoolTimer > 0f && !playerDetected){ // Cooling down, each frame
-                  gunCoolTimer -= Time.deltaTime;
-              }else if(gunCoolTimer > gunUptime){
-                  isCoolingDown = true;
-                  playerDetected = false;
-              }else if (playerDetected && !isCoolingDown){
+                if(gunCoolTimer > 0f && !playerDetected){ // Cooling down, each frame
+                    gunCoolTimer -= Time.deltaTime;
+                }else if(gunCoolTimer > gunUptime){
+                    isCoolingDown = true;
+                    playerDetected = false;
+                }else if (playerDetected && !isCoolingDown){
 
-                  gunCoolTimer += Time.deltaTime;
+                    gunCoolTimer += Time.deltaTime;
 
-                  if (Time.time - bulletManager.lastFireTime > bulletManager.fireRate){
-                      if (audioSource != null){
-                        audioSource.PlayOneShot(shootSound);
+                    if (Time.time - bulletManager.lastFireTime > bulletManager.fireRate){
+                        if (audioSource != null){
+                          audioSource.PlayOneShot(shootSound);
+                        }
+
+                        bulletManager.lastFireTime = Time.time; // Update last fire time
+
+                        print(" shooting bullet timer");
+                        bulletManager.AICmdShootBullet(aimAIQ);
+                        /*if (NetworkClient.isConnected){
+                            bulletManager.AICmdShootBullet(aimAIQ);
+                        }*/
                       }
+                }else if(isCoolingDown && gunCoolTimer < 0f){
+                    isCoolingDown = false;
+                    playerDetected = true;
+                }
 
-                      bulletManager.lastFireTime = Time.time; // Update last fire time
-                      if (NetworkClient.isConnected){
-                          bulletManager.AICmdShootBullet(aimAIQ);
-                      }}
-              }else if(isCoolingDown && gunCoolTimer < 0f){
-                  isCoolingDown = false;
-                  playerDetected = true;
+                 steer = AIsteer;
+                 pitch = AIpitch;
+                 breaks = AIbreaks;
+                 //print($"Steering AI PlaneControl: {steer}");
+                airspeed = steer_plane(airspeed, steer, pitch);
+                newTotalVel = airspeed;
               }
-
-               steer = AIsteer;
-               pitch = AIpitch;
-               breaks = AIbreaks;
-               //print($"Steering AI PlaneControl: {steer}");
-              airspeed = steer_plane(airspeed, steer, pitch);
-              newTotalVel = airspeed;
-            }
 
             if (!(float.IsNaN(newTotalVel.x) || float.IsNaN(newTotalVel.y) || float.IsNaN(newTotalVel.z))){
                 rb.linearVelocity = newTotalVel;
@@ -213,6 +216,17 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
             //cloud_suction = new Vector3(0f,0f,0f);
             }
         }
+
+    [ClientRpc]
+    void RpcSpawnExplosion(Vector3 position) {
+        vfx = Instantiate(explosionPrefabs, position, Quaternion.identity);
+        StartCoroutine(DestroyExplosionAfterTime(vfx, 1f));
+    }
+
+    public IEnumerator DestroyExplosionAfterTime(GameObject explosionInstance, float time){
+        yield return new WaitForSeconds(time);
+        Destroy(explosionInstance);
+    }
 
     [Command]
     void CmdUpdateExplosionTime(float time) {
@@ -347,6 +361,13 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
         //transform.position = new Vector3( 400f, 140f, 500f );
         rb.linearVelocity = transform.forward * 5f;
         healthBar = 100f;
+    }
+
+    [Server]
+    public void ServerHandleAIDeath() {
+        healthBar = 100f;
+        RpcSpawnExplosion(transform.position);  // Sync explosion to all clients
+
     }
 
     [TargetRpc]

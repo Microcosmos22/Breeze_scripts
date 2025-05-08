@@ -20,6 +20,7 @@ public class AIManager : MonoBehaviour
     private Rigidbody rb;
     public List<GameObject> targetPlayer = new List<GameObject>();
     public List<Rigidbody> targetRb = new List<Rigidbody>();
+    private List<Vector3> target_direction = new List<Vector3>();
     private float detectionThreshold, a,b,c, T1, T2, T, theta, detectionDistance, dist, dist_min, steerInput, steerDirection, steerMagnitude, steer;
     private Vector3 newPosition, pos, paral_hang;
     private List<GameObject> players;
@@ -37,14 +38,13 @@ public class AIManager : MonoBehaviour
     private bool alr_avoidingTerrain = false; // Moved outside the Update method
     private bool alr_detected = false, detected;
     private bool alr_detectionLost = false;
-    private Vector3 target_direction; // Moved outside the Update method
     public List<PlaneControl> targetPlaneControl = new List<PlaneControl>();
     private int chosenTarget;
     private Scene scene;
     private Quaternion rotation;
     private Vector3 direction, cross, grad_up, posdiff;
     private float terr_height, u1, u2, randStdNormal;
-    private GameObject explosionInstance;
+    private GameObject explosionInstance, vfx;
 
     void Start(){
 
@@ -57,6 +57,7 @@ public class AIManager : MonoBehaviour
             targetRb.Add(null);
             timeOutside.Add(0f);
             alr_outside.Add(false);
+            target_direction.Add(Vector3.zero);
         }
         print($"Initializing AI list with count: {dummyAircraft.Count}");
       }
@@ -79,10 +80,8 @@ public class AIManager : MonoBehaviour
 
           // dying
           if (dummyPlaneControl[i] != null && dummyPlaneControl[i].healthBar < 0f){
-                dummyPlaneControl[i].healthBar = 100f;
-                explosionInstance = Instantiate(dummyPlaneControl[i].explosionPrefabs);
-                explosionInstance.transform.position = dummyAircraft[i].transform.position;
-                StartCoroutine(dummyPlaneControl[i].bulletManager.DestroyExplosionAfterTime(explosionInstance, 1f));
+
+                dummyPlaneControl[i].ServerHandleAIDeath();
                 SetAIPosition(i);
             }
 
@@ -101,19 +100,19 @@ public class AIManager : MonoBehaviour
                     // FLYING TOWARDS TERRAIN
                  if(CheckIfFlyingTowardsTerrain(i)){
                      grad_up = dummyPlaneControl[i].getGradientDirection(pos).normalized*(-1f);
-                     target_direction = grad_up;
+                     target_direction[i] = grad_up;
 
                      // OUSIDE MAP
                 }else if (outsideMap){
                     if (!alr_outside[i]){ // First time outside map
                         timeOutside[i] = 0f;
                         alr_outside[i] = true;
-                        target_direction = setCourse_outsidemap(pos); // Calculate target direction
+                        target_direction[i] = setCourse_outsidemap(pos); // Calculate target direction
                     }
                     timeOutside[i] += Time.deltaTime; //
 
                     if (timeOutside[i] >= 0.5f){
-                        target_direction = setCourse_outsidemap(pos);
+                        target_direction[i] = setCourse_outsidemap(pos);
                         timeOutside[i] = 0f; // Reset the timer
                     }
 
@@ -126,17 +125,17 @@ public class AIManager : MonoBehaviour
                    forw = dummyAircraft[i].transform.forward;
 
                    if (Vector3.Dot(forw, paral_hangL) > Vector3.Dot(forw, paral_hangR)){
-                       target_direction = paral_hangL;
+                       target_direction[i] = paral_hangL;
                    }else{
-                       target_direction = paral_hangR;}
+                       target_direction[i] = paral_hangR;}
 
                  }else{
-                    target_direction = Vector3.zero;
+                    target_direction[i] = Vector3.zero;
 
                  }
 
-                if (target_direction != Vector3.zero){
-                     steer = CalculateAISteer(target_direction, dummyPlaneControl[i].transform.forward);
+                if (target_direction[i] != Vector3.zero){
+                     steer = CalculateAISteer(target_direction[i], dummyPlaneControl[i].transform.forward);
                     dummyPlaneControl[i].AIsteer = steer;
                   }else{
 
@@ -287,7 +286,7 @@ public class AIManager : MonoBehaviour
 
         terr_height = 50f;
 
-        flightlevel.Add(UnityEngine.Random.Range(terr_height+10f, 300f));
+        flightlevel.Add(UnityEngine.Random.Range(terr_height+10f, 230f));
 
         dummyAircraft[i].transform.position = new Vector3(
             UnityEngine.Random.Range(400f, 600f), // 500 to 700
