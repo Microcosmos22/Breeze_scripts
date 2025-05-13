@@ -141,12 +141,8 @@ public class BulletManager : NetworkBehaviour
 
         foreach (var netId in NetworkServer.spawned){
             var obj = netId.Value.gameObject;
-
-            IVehicleControl plane = obj.GetComponent<PlaneControl>();
-            if (!plane.enabled){
-                plane = obj.GetComponent<GliderControl>();
-            }
-
+            var plane = obj.GetComponent<PlaneControl>();
+            var glider = obj.GetComponent<GliderControl>();
 
             if (plane != null){
                 dist = Vector3.Distance(explosion, plane.transform.position);
@@ -158,42 +154,23 @@ public class BulletManager : NetworkBehaviour
                         TargetShowDamageCross(connectionToClient);}
                     //ApplyExplosionForce(plane, explosion, dist);
 
-                    if (plane.isAI){ // AI was hitted
-                        plane.healthBar -= hp_damage;
-                        //print($"🚨 Health: {plane.healthBar} to {plane.Username} at distance {dist} < {explosionRadius}");
+                    plane.healthBar -= hp_damage;
+                    if (plane.connectionToClient != null){
+                        plane.TargetTakeDamage(plane.connectionToClient, hp_damage);}
 
-                        if (plane.healthBar < 0f){
-                            kills += 1;
-                            plane.bulletManager.deaths += 1;
-                            //print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
-                            killmsg = $"{pc.Username} killed {plane.Username}";
+                    if (plane.healthBar < 0) {
 
-                            if (pc.isAI){
-                                chatManager.AISendMessage(killmsg, " ");
-                            }else{
-                                chatManager.CmdSendMessage(killmsg, " ");
-                            }
-                        }
-                    } else { // player was hitted
+                        kills += 1;
+                        plane.GetComponent<BulletManager>().deaths += 1;
 
-                        plane.healthBar -= hp_damage;
-                        if (isServer && plane.connectionToClient != null){
-                            plane.TargetTakeDamage(plane.connectionToClient, hp_damage);
+                        killmsg = $"{pc.Username} killed {plane.Username}";
+
+                        if (pc.isAI){
+                            chatManager.AISendMessage(killmsg, " ");
+                        }else{
+                            chatManager.CmdSendMessage(killmsg, " ");
                         }
 
-                        if (plane.healthBar < 0) {
-
-                            kills += 1;
-                            plane.GetComponent<BulletManager>().deaths += 1;
-
-                            killmsg = $"{pc.Username} killed {plane.Username}";
-
-                            if (pc.isAI){
-                                chatManager.AISendMessage(killmsg, " ");
-                            }else{
-                                chatManager.CmdSendMessage(killmsg, " ");
-                            }
-                        }
                     }
                 }
             }
