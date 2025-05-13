@@ -108,6 +108,7 @@ public class UIManager : NetworkManager
 
     public override void Start(){
         //NetworkManager.singleton = this;
+        Application.targetFrameRate = 40;
 
         aiManager = FindAIManagerInAnyScene();
         //StartCoroutine(LoadSceneAndSetActive());

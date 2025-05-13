@@ -23,6 +23,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
     private GameObject explosionInstance;
     private BulletManager bulletManager;
     public Vector3 w_exp, e_w, tornado, forward_airspeed, particlePos, newVelocity, gradient, e_grad;
+    [SyncVar] public int lives;
 
     private float[,] heightMap; // Cached height data
     private int terrainWidth, terrainHeight;

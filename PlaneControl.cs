@@ -9,6 +9,7 @@ using TMPro;
 using UnityEngine.EventSystems;
 
 public class PlaneControl : NetworkBehaviour, IVehicleControl{
+    public ChatManager chatManager;
     public Rigidbody rb;
     public BoxCollider collider;
     public Vector3 airspeed;
@@ -72,7 +73,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public float AIsteer { get; set; }
     public float AIpitch { get; set; }
     public bool AIbreaks { get; set; }
-    public bool isAI { get; set; }
+    [SyncVar] public bool isAI = false;
 
     public float gunCoolTimer;
     private float slopeCalcTimer = 0f;
@@ -80,7 +81,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public float healingTime;
     public float gunUptime;
     public bool isCoolingDown = false;
-    public string Username;
+    [SyncVar] public string Username;
 
     public GameObject explosionPrefabs, vfx;
     private GameObject explosionInstance;
@@ -90,12 +91,15 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public BulletManager bulletManager;
     public PanelManager PanelManager;
     public List<GameObject> ownBullets = new List<GameObject>();
-    public bool ispaused = true;
+    [SyncVar] public bool ispaused = true;
 
     private AudioSource audioSource;
     public AudioClip shootSound;
 
     void FixedUpdate(){
+        if (isServer){
+            ServerCheckHealthAndRespawn();
+        }
 
 
         if (!ispaused && land != null && ((isLocalPlayer) || (isAI))){
@@ -103,22 +107,10 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
             if (isLocalPlayer){
               //healthBar = 100f;
 
-              healingTimer += Time.deltaTime;
-              if (healthBar < 100f && healingTimer > healingTime){
-                  healthBar += 1f;
-                  TargetTakeDamage(networkIdentity.connectionToClient, -1f);
-                  healingTimer = 0f;
-                  }
-              else if(healthBar<0f){
 
-                  healthBar = 100f;
-                  RpcSpawnExplosion(transform.position);
-
-                  set_initpos();
-              }
 
               scrollInput = Input.GetAxis("Mouse ScrollWheel");
-              bulletManager.explosionTime += scrollInput * 2f; // Adjust FOV
+              bulletManager.explosionTime += scrollInput / 2f; // Adjust FOV
               bulletManager.explosionTime = Mathf.Clamp(bulletManager.explosionTime, 52f/bulletManager.bulletspeed, 360f/bulletManager.bulletspeed);
               CmdUpdateExplosionTime(bulletManager.explosionTime);
 
@@ -186,8 +178,6 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
                         }
 
                         bulletManager.lastFireTime = Time.time; // Update last fire time
-
-                        print(" shooting bullet timer");
                         bulletManager.AICmdShootBullet(aimAIQ);
                         /*if (NetworkClient.isConnected){
                             bulletManager.AICmdShootBullet(aimAIQ);
@@ -217,15 +207,19 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
             }
         }
 
-    [ClientRpc]
-    void RpcSpawnExplosion(Vector3 position) {
-        vfx = Instantiate(explosionPrefabs, position, Quaternion.identity);
-        StartCoroutine(DestroyExplosionAfterTime(vfx, 1f));
-    }
-
     public IEnumerator DestroyExplosionAfterTime(GameObject explosionInstance, float time){
         yield return new WaitForSeconds(time);
         Destroy(explosionInstance);
+    }
+
+    [Command]
+    public void CmdSetUsernameServer(string name) {
+        Username = name;
+    }
+
+    [Command]
+    public void CmdSetPaused(bool paused) {
+        ispaused = paused;
     }
 
     [Command]
@@ -252,6 +246,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     void Start()
     {
       audioSource = GetComponent<AudioSource>();
+      chatManager = transform.GetComponentInChildren<ChatManager>();
 
 
       StartCoroutine(FindTerrainInScenes());
@@ -356,9 +351,46 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
         airspeed = air;
     }
 
+    [Server]
+    public void ServerCheckHealthAndRespawn() {
+      if(isAI) return;
+      if(ispaused) return;
+
+      healingTimer += Time.deltaTime;
+
+      if (healthBar < 100f && healingTimer > healingTime){
+          healthBar += 1f;
+          TargetTakeDamage(networkIdentity.connectionToClient, -1f);
+          healingTimer = 0f;
+          }
+
+      if (healthBar <= 0f) {
+            RpcSpawnExplosion(transform.position);
+            healthBar = 100f;
+            TargetResetToInitialPos(networkIdentity.connectionToClient);
+        }
+    }
+
+    [TargetRpc]
+    public void TargetTakeDamage(NetworkConnection target, float hp_damage) {
+        healthBar -= hp_damage;
+        //print($"Damaging Player in client. Health: {healthBar}");
+    }
+
+    [TargetRpc]
+    void TargetResetToInitialPos(NetworkConnection target) {
+        set_initpos(); // Now it's okay: visual + local rb sync
+    }
+
+    [ClientRpc]
+    void RpcSpawnExplosion(Vector3 position) {
+        vfx = Instantiate(explosionPrefabs, position, Quaternion.identity);
+        StartCoroutine(DestroyExplosionAfterTime(vfx, 1f));
+    }
+
     public void set_initpos(){
-        transform.position = new Vector3(15f, 15f, 1015f);
-        //transform.position = new Vector3( 400f, 140f, 500f );
+        //transform.position = new Vector3(15f, 15f, 1015f);
+        transform.position = new Vector3( 400f, 140f, 500f );
         rb.linearVelocity = transform.forward * 5f;
         healthBar = 100f;
     }
@@ -379,11 +411,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
         healthBar = 100f;
     }
 
-    [TargetRpc]
-    public void TargetTakeDamage(NetworkConnection target, float hp_damage) {
-        healthBar -= hp_damage;
-        //print($"Damaging Player in client. Health: {healthBar}");
-    }
+
 
     [TargetRpc]
     public void TargetResetHealth(NetworkConnection target){
@@ -393,6 +421,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     public void OnCollisionEnter(Collision collision){
       if (!enabled) return;
       if (!isServer) return;
+      if (ispaused) return;
 
       Debug.Log("Collision with: " + collision.gameObject.name);
 

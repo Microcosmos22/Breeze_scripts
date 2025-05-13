@@ -66,9 +66,7 @@ public class Instr_update : MonoBehaviour
 
 
         //Airspeedslider = GetComponent<Slider>();
-
         // Get current altitude of the parent Rigidbody
-
         //pointer1 = GameObject.Find("PointAlt").GetComponent<Image>(); //GetComponentInChildren<PointAlt>();
         //pointer2 = GameObject.Find("PointAlt_fast").GetComponent<Image>(); // GetComponentInChildren<PointAlt_fast>();
     }

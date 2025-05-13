@@ -42,7 +42,12 @@ public class BulletManager : NetworkBehaviour
 
     public GameObject VertLayoutGroup;
 
-    public int kills, deaths;
+    [SyncVar]
+    public int kills;
+
+    [SyncVar]
+    public int deaths;
+
     private bool isOwned;
 
     public VehicleSwitch vehicleSwitch;
@@ -54,8 +59,6 @@ public class BulletManager : NetworkBehaviour
 
     void Start()
     {
-        print($" Initializing BulletManager: {isLocalPlayer}, {isOwned}, {isServer}");
-
         aircraft = transform.gameObject;
         collider = aircraft.GetComponent<Collider>();
         offset = Random.Range(0f, 0.7f);
@@ -66,9 +69,17 @@ public class BulletManager : NetworkBehaviour
         vehicleSwitch = GetComponent<VehicleSwitch>();
 
         if (pc.networkIdentity.isLocalPlayer){ // pc.enabled &&
-            chatScrollRect = chatScroll.GetComponent<ScrollRect>();
-            chatInputField = chatInput.GetComponent<TMP_InputField>();}
-            chatManager = FindObjectOfType<ChatManager>();
+          if (chatScroll != null)
+              chatScrollRect = chatScroll.GetComponent<ScrollRect>();
+          else
+              Debug.LogWarning("chatScroll not assigned on BulletManager!");
+
+          if (chatInput != null)
+              chatInputField = chatInput.GetComponent<TMP_InputField>();
+          else
+              Debug.LogWarning("chatInput not assigned on BulletManager!");
+          }
+              chatManager = FindObjectOfType<ChatManager>();
         }
 
     void Update()
@@ -90,8 +101,9 @@ public class BulletManager : NetworkBehaviour
           if (Input.GetKeyDown(KeyCode.Return) && !string.IsNullOrWhiteSpace(chatInputField.text)){
               string msg = chatInputField.text;
               chatInputField.text = "";
-              print($" Player tryina send message, isOwned: {isOwned}");
-              chatManager.CmdSendMessage(msg, pc.Username);
+
+              if (isLocalPlayer && NetworkClient.isConnected){
+                  chatManager.CmdSendMessage(msg, pc.Username);}
           }
 
           if (VertLayoutGroup.transform.childCount > 6)
@@ -115,6 +127,11 @@ public class BulletManager : NetworkBehaviour
         Destroy(explosionInstance);
     }
 
+    [TargetRpc]
+    public void TargetShowDamageCross(NetworkConnection target){
+        StartCoroutine(ActivateDamageCross());
+    }
+
     private IEnumerator ActivateDamageCross(){
         DealtDamageCross.SetActive(true);  // Activate the object
         yield return new WaitForSeconds(0.3f);  // Wait for 0.3 seconds
@@ -136,9 +153,9 @@ public class BulletManager : NetworkBehaviour
                 if (dist < (explosionRadius)){
                     hp_damage = Mathf.Clamp((-dist+40f)/2,0f,25f);
 
-                    if (pc.isOwned){
-                        StartCoroutine(ActivateDamageCross());}
-
+                    if (!pc.isAI){
+                        TargetShowDamageCross(connectionToClient);}
+                    //ApplyExplosionForce(plane, explosion, dist);
 
                     if (plane.isAI){ // AI
                         plane.healthBar -= hp_damage;
@@ -146,10 +163,10 @@ public class BulletManager : NetworkBehaviour
 
                         if (plane.healthBar < 0f){
                             kills += 1;
-                            plane.GetComponent<BulletManager>().deaths += 1;
-                            print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
+                            plane.bulletManager.deaths += 1;
+                            //print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
                             killmsg = $"{pc.Username} killed {plane.Username}";
-                            chatManager.CmdSendMessage(killmsg, "void");
+                            chatManager.AISendMessage(killmsg, " ");
                         }
                     } else {
 
@@ -157,7 +174,10 @@ public class BulletManager : NetworkBehaviour
                         //print($"🚨 Health: {plane.healthBar} to {obj.name} at distance {dist} < {explosionRadius}");
                         //print($" within range: {dist} m, dealing {hp_damage} damage");
 
-                        plane.TargetTakeDamage(plane.connectionToClient, hp_damage);
+                        if (isServer && plane.connectionToClient != null){
+                            plane.TargetTakeDamage(plane.connectionToClient, hp_damage);
+                        }
+
                         if (plane.healthBar < 0) {
                             plane.set_initpos();
                             plane.TargetSetInitpos(plane.connectionToClient);
@@ -166,15 +186,37 @@ public class BulletManager : NetworkBehaviour
 
                             kills += 1;
                             plane.GetComponent<BulletManager>().deaths += 1;
-                            print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
+                            //print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
                             killmsg = $"{pc.Username} killed {plane.Username}";
-                            chatManager.CmdSendMessage(killmsg, "void");
+                            chatManager.CmdSendMessage(killmsg, " ");
                         }
                     }
                 }
             }
         }
     }
+
+    // Helper method to apply the drift force
+    private void ApplyExplosionForce(PlaneControl plane, Vector3 explosionPosition, float distance)
+    {
+        // Calculate direction away from the explosion
+        Vector3 directionAwayFromExplosion = plane.transform.position - explosionPosition;
+
+        // Normalize the direction to avoid uneven force
+        directionAwayFromExplosion.Normalize();
+
+        // Calculate a force based on distance (the closer the plane, the stronger the force)
+        float forceStrength = Mathf.Clamp((explosionRadius - distance) * 500f, 0f, 200f); // You can adjust the multiplier for desired force strength
+        Debug.Log($"Applying force with strength {forceStrength}");
+
+        // Apply the force if the plane has a Rigidbody
+        Rigidbody rb = plane.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.AddForce(directionAwayFromExplosion * forceStrength, ForceMode.VelocityChange);
+        }
+    }
+
 
     [Server]
     public IEnumerator Ballistics(GameObject bullet){
@@ -192,7 +234,6 @@ public class BulletManager : NetworkBehaviour
                 if (whether2explode){
                   Expl_damage(bullet.transform.position);
                   RpcSpawnExplosion(bullet.transform.position);
-                  print("server bullet explode");
                 }
                 NetworkServer.Destroy(bullet);
 
@@ -211,14 +252,13 @@ public class BulletManager : NetworkBehaviour
     [Server]
     void SrvStartTrail(GameObject bullet){
         if (!isServer) return;
-        
+
         StartCoroutine(Ballistics(bullet));
     }
 
     [Server]
     public void AICmdShootBullet(Quaternion passed_aim){
         if (!isServer) return;
-        print("AI shot");
 
         lastFireTime = Time.time;
 

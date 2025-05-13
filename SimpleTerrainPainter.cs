@@ -60,7 +60,7 @@ private float[,] treedensity = new float[3, 4]
         int[,] detailLayerFlower = new int[width, height];
         int[,] detailLayerDry = new int[width, height];
 
-        int detailDensity = 5;
+        int detailDensity = 3;
 
         // Define and assign tree prototypes
         TreePrototype[] treePrototypes = new TreePrototype[3];
@@ -153,8 +153,8 @@ private float[,] treedensity = new float[3, 4]
 
                     // Set splatmap for forests
                     splatmapData[z, x, 1] = 1.0f;
-                    detailLayerForest[detailZ, detailX] = 4;
-                    detailLayerGreen[detailZ, detailX] = 2;
+                    detailLayerForest[detailZ, detailX] = 3;
+                    detailLayerGreen[detailZ, detailX] = 1;
                     detailLayerFlower[z, x] = 2;
 
 

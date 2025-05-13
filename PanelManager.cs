@@ -66,17 +66,13 @@ public class PanelManager : NetworkBehaviour
     }
 
 
-
-
-
-
     public void OnSubmitButtonClicked(){
       if (isLocalPlayer && inputF.text != ""){
 
           registerPanel.SetActive(false);
           guidePanel.SetActive(true);
           instrumentsPanel.SetActive(false);
-          pc.Username = inputF.text;
+          pc.CmdSetUsernameServer(inputF.text);
           Debug.Log("Registered the user : " + pc.Username);
       }
 
@@ -96,7 +92,7 @@ public class PanelManager : NetworkBehaviour
 
             mainCam.enabled = true; // Disable the guide camera if any
             //Camera.main.enabled = true; // Enable the main camera for the scene
-            pc.ispaused = false;
+            pc.CmdSetPaused(false);
             pc.set_initpos();
 
         }

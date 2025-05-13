@@ -26,6 +26,13 @@ public class CamFollower : NetworkBehaviour
     public Vector3 v_offset;
     private Camera camera;
 
+    Queue<(float y, float time)> yPositions = new Queue<(float, float)>();
+    public float historyDuration = 1f; // How long to keep positions (in seconds)
+    private float lastUpdateTime = 0f;  // Track time to handle frame rate consistency
+    private float y1SecondAgo = 0f;  // Variable to store the Y-position from 1 second ago
+    private Vector3 laggedPosition;
+    private int framesToRemove = 0;
+
 
     public GameObject gunCrosshair;
     private RawImage gunImg;
@@ -118,8 +125,46 @@ public class CamFollower : NetworkBehaviour
                     print(" cam couldnt find vehicle type");
                 }
             }else{
+
+
+              if (vehicleSwitch.vehicletype == "pc"){ // lagged y position
+                  yPositions.Enqueue((player.transform.position.y, Time.time));
+
+                  // Remove entries older than 1 second
+                  while (Time.time - yPositions.Peek().time > historyDuration)
+                  {
+                      yPositions.Dequeue(); // dequeue and grab oldest
+                  }
+
+                  y1SecondAgo = player.transform.position.y; // fallback
+                  foreach (var (y, timestamp) in yPositions)
+                  {
+                      if (Time.time - timestamp >= (historyDuration-0.8f))
+                      {
+                          y1SecondAgo = y; // found Y from 1 second ago
+                          break;
+                      }
+                  }
+
+                  if (y1SecondAgo - player.transform.position.y > 1f){
+                      y1SecondAgo = player.transform.position.y + 1f;
+                  }else if (y1SecondAgo - player.transform.position.y < -1f){
+                      y1SecondAgo = player.transform.position.y - 1f;
+                  }
+              }else{
+                  y1SecondAgo = player.transform.position.y;
+              }
+
+                laggedPosition = new Vector3(
+                    player.transform.position.x,  // Use current X position
+                    y1SecondAgo,                  // Use the Y-position from 1 second ago
+                    player.transform.position.z   // Use current Z position
+                );
+
+
+
                 Camera.main.fieldOfView = 60f;
-                position = player.transform.position - cam_rotation * Vector3.forward * 10f + v_offset;
+                position = laggedPosition - cam_rotation * Vector3.forward * 10f + v_offset;
                 gunImg.enabled = false;
             }
 

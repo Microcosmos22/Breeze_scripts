@@ -159,6 +159,7 @@ public class AIManager : MonoBehaviour
                 NetworkServer.Spawn(dummyAircraft[i], dummyConnection);
                 dummyPlaneControl[i] = dummyAircraft[i].GetComponent<PlaneControl>();
                 dummyPlaneControl[i].isAI = true;
+                dummyPlaneControl[i].ispaused = false;
                 dummyPlaneControl[i].glide_desc = 0;
                 dummyPlaneControl[i].Username = "AI n" + i.ToString();
                 dummyRb[i] = dummyAircraft[i].GetComponent<Rigidbody>();
@@ -201,8 +202,6 @@ public class AIManager : MonoBehaviour
           dummyPlaneControl[i].setAim(Quaternion.LookRotation(simpleLead));
           // Setting an explosion time with the above assumption, clamp to 60 m - 360 m ( in time )
           dummyPlaneControl[i].bulletManager.explosionTime = Mathf.Clamp((targetPlayer[i].transform.position-dummyAircraft[i].transform.position+ targetRb[i].linearVelocity*0.7f).magnitude / dummyPlaneControl[i].bulletManager.bulletspeed, 60f/dummyPlaneControl[i].bulletManager.bulletspeed, 360f/dummyPlaneControl[i].bulletManager.bulletspeed);
-
-          //print($"Simple aim quat: {Quaternion.LookRotation(simpleLead)}");
 
         }
       }
