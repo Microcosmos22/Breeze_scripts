@@ -53,10 +53,6 @@ public class BulletManager : NetworkBehaviour
     public VehicleSwitch vehicleSwitch;
     private Collider collider;
 
-    void Awake() {
-        vehicleSwitch = GetComponent<VehicleSwitch>();
-    }
-
     void Start()
     {
         aircraft = transform.gameObject;
@@ -145,7 +141,12 @@ public class BulletManager : NetworkBehaviour
 
         foreach (var netId in NetworkServer.spawned){
             var obj = netId.Value.gameObject;
-            var plane = obj.GetComponent<PlaneControl>();
+
+            IVehicleControl plane = obj.GetComponent<PlaneControl>();
+            if (!plane.enabled){
+                plane = obj.GetComponent<GliderControl>();
+            }
+
 
             if (plane != null){
                 dist = Vector3.Distance(explosion, plane.transform.position);
@@ -157,7 +158,7 @@ public class BulletManager : NetworkBehaviour
                         TargetShowDamageCross(connectionToClient);}
                     //ApplyExplosionForce(plane, explosion, dist);
 
-                    if (plane.isAI){ // AI
+                    if (plane.isAI){ // AI was hitted
                         plane.healthBar -= hp_damage;
                         //print($"🚨 Health: {plane.healthBar} to {plane.Username} at distance {dist} < {explosionRadius}");
 
@@ -166,29 +167,32 @@ public class BulletManager : NetworkBehaviour
                             plane.bulletManager.deaths += 1;
                             //print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
                             killmsg = $"{pc.Username} killed {plane.Username}";
-                            chatManager.AISendMessage(killmsg, " ");
+
+                            if (pc.isAI){
+                                chatManager.AISendMessage(killmsg, " ");
+                            }else{
+                                chatManager.CmdSendMessage(killmsg, " ");
+                            }
                         }
-                    } else {
+                    } else { // player was hitted
 
                         plane.healthBar -= hp_damage;
-                        //print($"🚨 Health: {plane.healthBar} to {obj.name} at distance {dist} < {explosionRadius}");
-                        //print($" within range: {dist} m, dealing {hp_damage} damage");
-
                         if (isServer && plane.connectionToClient != null){
                             plane.TargetTakeDamage(plane.connectionToClient, hp_damage);
                         }
 
                         if (plane.healthBar < 0) {
-                            plane.set_initpos();
-                            plane.TargetSetInitpos(plane.connectionToClient);
-                            plane.healthBar = 100f;
-                            plane.TargetResetHealth(plane.connectionToClient);
 
                             kills += 1;
                             plane.GetComponent<BulletManager>().deaths += 1;
-                            //print($" {pc.Username} killed {plane.Username} and has now {kills} kills");
+
                             killmsg = $"{pc.Username} killed {plane.Username}";
-                            chatManager.CmdSendMessage(killmsg, " ");
+
+                            if (pc.isAI){
+                                chatManager.AISendMessage(killmsg, " ");
+                            }else{
+                                chatManager.CmdSendMessage(killmsg, " ");
+                            }
                         }
                     }
                 }

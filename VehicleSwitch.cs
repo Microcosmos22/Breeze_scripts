@@ -13,9 +13,12 @@ public class VehicleSwitch : NetworkBehaviour
     public GameObject PlaneModel;
     public GameObject GliderModel;
 
+    private NetworkIdentity networkIdentity;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        networkIdentity = GetComponent<NetworkIdentity>();
         bulletManager = GetComponent<BulletManager>();
         gliderCatch = new Vector3(711f, 283f, 321f);
         vehicletype = "pc";
@@ -40,9 +43,13 @@ public class VehicleSwitch : NetworkBehaviour
                 vehicletype = "gc";
                 RpcUpdateVehicle("gc"); // Notify all clients about the switch
             }
-            else if (!pc.enabled && gc.enabled)
+            else if (gc.lives == 0)
             {
-                vehicletype = "gc";
+                if (pc != null) pc.enabled = true;
+                if (gc != null) gc.enabled = false;
+                vehicletype = "pc";
+                RpcUpdateVehicle("pc"); // Notify all clients about the switch
+                //pc.TargetResetToInitialPos(pc.connectionToClient);
             }
 
             // Set model visibility
@@ -57,6 +64,10 @@ public class VehicleSwitch : NetworkBehaviour
             }
             else
             {
+                bulletManager.fireRate = 0.7f;
+                bulletManager.explosionTime = 3f;
+                bulletManager.bulletspeed = 100f;
+                bulletManager.whether2explode = true;
                 PlaneModel.SetActive(true);
                 GliderModel.SetActive(false);
             }

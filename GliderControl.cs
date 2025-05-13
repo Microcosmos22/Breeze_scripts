@@ -24,6 +24,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
     private BulletManager bulletManager;
     public Vector3 w_exp, e_w, tornado, forward_airspeed, particlePos, newVelocity, gradient, e_grad;
     [SyncVar] public int lives;
+    [SyncVar] public string Username;
 
     private float[,] heightMap; // Cached height data
     private int terrainWidth, terrainHeight;
@@ -41,6 +42,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
     public Terrain land;
     public float gunCoolTimer;
     public float gunUptime;
+    [SyncVar] public bool isAI = false;
 
     public float restore_coeff_pitch;
     public float restore_coeff_yaw;
@@ -65,8 +67,10 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
     public float init_velocity;
     public float aerodyn_const;
     public float control_torque;
-    private NetworkIdentity netIdentity;
+    private NetworkIdentity networkIdentity;
     private CamFollower camFollow;
+
+    public GameObject vfx;
 
     public AudioClip shootSound;
     float mouseX, mouseY, mouseSensitivity;
@@ -84,7 +88,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
         set_initpos();
 
         bulletManager = GetComponent<BulletManager>();
-        netIdentity = GetComponent<NetworkIdentity>();
+        networkIdentity = GetComponent<NetworkIdentity>();
         StartCoroutine(WaitForTerrainInNetwork());
         camFollow = GetComponentInChildren<CamFollower>();
 
@@ -107,28 +111,49 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
         print(rb.linearVelocity);
     }
 
-    public void FixedUpdate(){
-        // HEALTH AND DYING
-        if (isLocalPlayer && land != null){
-          healingTimer += Time.deltaTime;
+    void OnEnable(){
+        lives = 3;
+    }
 
-          if (healthBar < 100f && healingTimer > healingTime){
-              healthBar += 1f;
-              TargetTakeDamage(netIdentity.connectionToClient, -1f);
-              healingTimer = 0f;
-              print("healing");
-              }
-          else if(healthBar<0f){
+    [Server]
+    public void ServerCheckHealthAndRespawn() {
+      // Handles healing and respawning
+      if(isAI) return;
 
-              healthBar = 100f;
-              explosionInstance = Instantiate(explosionPrefabs);
-              explosionInstance.transform.position = transform.position;
-              StartCoroutine(bulletManager.DestroyExplosionAfterTime(explosionInstance, 1f));
-              set_initpos();
+      healingTimer += Time.deltaTime;
+
+      if (healthBar < 100f && healingTimer > healingTime){
+          healthBar += 1f;
+          TargetTakeDamage(networkIdentity.connectionToClient, -1f);
+          healingTimer = 0f;
           }
 
+      if (healthBar <= 0f) {
+            lives = lives - 1;
+            RpcSpawnExplosion(transform.position);
+            healthBar = 100f;
+            TargetResetToInitialPos(networkIdentity.connectionToClient);
+
+        }
+    }
+
+    [ClientRpc]
+    void RpcSpawnExplosion(Vector3 position) {
+        vfx = Instantiate(explosionPrefabs, position, Quaternion.identity);
+        StartCoroutine(DestroyExplosionAfterTime(vfx, 1f));
+    }
+
+    public void FixedUpdate(){
+        // HEALTH AND DYING
+        if (isServer){
+
+            ServerCheckHealthAndRespawn();
+        }
+
         //    DRAG, LIFT, GRAVITY AND AERODYNAMIC FORCE
-        airspeed = rb.linearVelocity; // - exp_slopew - cloud_suction ;
+        slope_vel = calculate_slopewind(atm_wind/3f, transform.position); // contains atm + slopewind
+
+        airspeed = rb.linearVelocity - slope_vel - cloud_suction;
         v_forw = Vector3.Dot(airspeed, transform.forward); // velocity projected on the forward
         drag = drag_vec*drag_coeff*(float)Math.Pow(v_forw,2);
         if (v_forw > 0){ // travelling forward
@@ -139,7 +164,6 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
         }
 
         //print($"aer forces: {drag}, {lift}, {aerodyn_force}");
-        print($"ext forces: {slope_vel}, {cloud_suction}");
 
         gravity = new Vector3(0f, -5f, 0f);
         aerodyn_force = calc_aerodynamics();
@@ -147,6 +171,8 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
         total_force = drag+lift+aerodyn_force;
         rb.AddRelativeForce(total_force, ForceMode.Acceleration);
         rb.AddForce(gravity, ForceMode.Acceleration);
+        //rb.linearVelocity = rb.linearVelocity + slope_vel + cloud_suction;
+        //rb.AddForce((slope_vel + cloud_suction), ForceMode.Acceleration);
 
 
         // Input applies a torque on the local system, rotating the lift vector
@@ -168,9 +194,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
         rb.AddRelativeTorque(restoring_torque, ForceMode.Acceleration);
 
 
-        slope_vel = calculate_slopewind(atm_wind, transform.position); // contains atm + slopewind
-        //rb.linearVelocity = rb.linearVelocity + slope_vel + cloud_suction;
-        rb.AddForce((slope_vel + cloud_suction), ForceMode.Acceleration);
+
 
         //rb.velocity = rb.velocity; + cloud_suction;
         //rb.position += rb.position+(exp_slopew+cloud_suction)*Time.deltaTime;
@@ -197,7 +221,7 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
             isCoolingDown = false;
         }
     }
-  }
+
 
   IEnumerator FindTerrainInScenes(){
   while (land == null){
@@ -219,6 +243,12 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
       yield return new WaitForSeconds(0.1f);
   }
 }
+
+  [TargetRpc]
+  public void TargetResetToInitialPos(NetworkConnection target) {
+      print(" RESET INIT POS");
+      set_initpos(); // Now it's okay: visual + local rb sync
+  }
 
   public float GetCachedHeight(Vector3 position){
       if (land == null){
@@ -263,19 +293,17 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
       if (!enabled) return;
       if (!isServer) return;
 
-      Debug.Log($"{gameObject.name} | isServer: {isServer}, isClient: {isClient}");
-      Debug.Log($" isOwned: {netIdentity.isOwned}, isLocalPlayer: {isLocalPlayer}");
 
-      if (netIdentity.isOwned){ // Player
+      if (!isAI){ // Player
           if (collision.gameObject.CompareTag("Terrain")){
               healthBar -= 102f; // Damage in server, then damage the client
-              TargetTakeDamage(netIdentity.connectionToClient, 102f);
-              print(" HITTING TERRAIN");
+              TargetTakeDamage(networkIdentity.connectionToClient, 102f);
+              bulletManager.deaths += 1;
           }
       }else{                        // AI
           if (collision.gameObject.CompareTag("Terrain")){
               healthBar -= 102f; // Damage in server, then damage the client
-              print(" AI hitting terrain");
+              bulletManager.deaths += 1;
           }
     }}
 
@@ -343,12 +371,16 @@ public class GliderControl : NetworkBehaviour, IVehicleControl
     [TargetRpc]
     public void TargetTakeDamage(NetworkConnection target, float hp_damage) {
         healthBar -= hp_damage;
-        print($"Damaging Player in client. Health: {healthBar}");
     }
 
     [ClientRpc]
     public void RpcSetAtmWind(Vector3 atm_wind_server){
         atm_wind = atm_wind_server;
+    }
+
+    public IEnumerator DestroyExplosionAfterTime(GameObject explosionInstance, float time){
+        yield return new WaitForSeconds(time);
+        Destroy(explosionInstance);
     }
 
     private IEnumerator WaitForTerrainInNetwork(){

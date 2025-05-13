@@ -47,9 +47,9 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     private float local_phi;
 
     public Quaternion gun_quaternion;
-    public float maxHealth = 100f; // Maximum health of the plane
-    [SyncVar] private float currentHealth; // Current health (synchronized)
-    public float healthBar; // UI Health Bar
+    public float maxHealth = 100f;
+    [SyncVar] private float currentHealth;
+    public float healthBar;
 
     private UIVirtualJoystick virtualJoystick;
     private float steepness;
@@ -353,6 +353,7 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
 
     [Server]
     public void ServerCheckHealthAndRespawn() {
+      // Handles healing and respawning
       if(isAI) return;
       if(ispaused) return;
 
@@ -389,8 +390,9 @@ public class PlaneControl : NetworkBehaviour, IVehicleControl{
     }
 
     public void set_initpos(){
-        //transform.position = new Vector3(15f, 15f, 1015f);
-        transform.position = new Vector3( 400f, 140f, 500f );
+        //transform.position = new Vector3(15f, 15f, 1015f); //real spawn
+        //transform.position = new Vector3( 400f, 140f, 500f ); // center
+        transform.position = new Vector3(700f, 300f, 300f); // glider catch
         rb.linearVelocity = transform.forward * 5f;
         healthBar = 100f;
     }
